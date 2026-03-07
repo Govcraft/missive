@@ -42,7 +42,6 @@ pub struct AttachmentInfo {
     pub blob_id: String,
     pub name: String,
     pub size_display: String,
-    pub content_type: String,
 }
 
 pub async fn create_client(
@@ -229,7 +228,6 @@ pub async fn fetch_email_detail(
             Some(AttachmentInfo {
                 name: part.name().unwrap_or("attachment").to_string(),
                 size_display: format_file_size(part.size()),
-                content_type: part.content_type().unwrap_or("application/octet-stream").to_string(),
                 blob_id,
             })
         })
