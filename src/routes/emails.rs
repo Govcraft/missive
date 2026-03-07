@@ -1,14 +1,13 @@
 use acton_service::prelude::*;
-
-use crate::config::PostalConfig;
-use crate::error::PostalError;
-use crate::jmap::{self, EmailDetail, EmailSummary};
-use crate::session::{PostalSession, get_credentials};
 use axum::body::Body;
+
+use crate::error::MissiveError;
+use crate::jmap::{self, BlobId, EmailDetail, EmailId, EmailSummary, MailboxId};
+use crate::session::AuthenticatedClient;
 
 #[derive(Deserialize)]
 pub struct EmailListParams {
-    pub mailbox_id: String,
+    pub mailbox_id: MailboxId,
     #[serde(default)]
     pub position: usize,
 }
@@ -17,7 +16,7 @@ pub struct EmailListParams {
 #[template(path = "partials/email_list.html")]
 struct EmailListTemplate {
     emails: Vec<EmailSummary>,
-    mailbox_id: String,
+    mailbox_id: MailboxId,
     next_position: Option<usize>,
 }
 
@@ -28,14 +27,10 @@ struct EmailDetailTemplate {
 }
 
 pub async fn list_emails(
-    State(state): State<AppState<PostalConfig>>,
-    session: TypedSession<PostalSession>,
+    AuthenticatedClient(client): AuthenticatedClient,
     Query(params): Query<EmailListParams>,
-) -> std::result::Result<impl IntoResponse, PostalError> {
+) -> std::result::Result<impl IntoResponse, MissiveError> {
     info!("list_emails: mailbox_id={}", params.mailbox_id);
-    let (username, password) = get_credentials(&session).ok_or(PostalError::SessionRequired)?;
-    let jmap_url = &state.config().custom.jmap_url;
-    let client = jmap::create_client(jmap_url, &username, &password).await?;
     let page_size = 50;
     let emails =
         jmap::fetch_emails(&client, &params.mailbox_id, params.position, page_size).await?;
@@ -57,14 +52,10 @@ pub async fn list_emails(
 }
 
 pub async fn get_email(
-    State(state): State<AppState<PostalConfig>>,
-    session: TypedSession<PostalSession>,
-    Path(id): Path<String>,
-) -> std::result::Result<impl IntoResponse, PostalError> {
+    AuthenticatedClient(client): AuthenticatedClient,
+    Path(id): Path<EmailId>,
+) -> std::result::Result<impl IntoResponse, MissiveError> {
     info!("get_email: id={id}");
-    let (username, password) = get_credentials(&session).ok_or(PostalError::SessionRequired)?;
-    let jmap_url = &state.config().custom.jmap_url;
-    let client = jmap::create_client(jmap_url, &username, &password).await?;
     let email = jmap::fetch_email_detail(&client, &id).await?;
     info!("get_email: returning email subject={}", email.subject);
     Ok(HtmlTemplate::page(EmailDetailTemplate { email }))
@@ -76,15 +67,11 @@ pub struct DownloadParams {
 }
 
 pub async fn download_attachment(
-    State(state): State<AppState<PostalConfig>>,
-    session: TypedSession<PostalSession>,
-    Path(blob_id): Path<String>,
+    AuthenticatedClient(client): AuthenticatedClient,
+    Path(blob_id): Path<BlobId>,
     Query(params): Query<DownloadParams>,
-) -> std::result::Result<impl IntoResponse, PostalError> {
+) -> std::result::Result<impl IntoResponse, MissiveError> {
     info!("download_attachment: blob_id={blob_id}");
-    let (username, password) = get_credentials(&session).ok_or(PostalError::SessionRequired)?;
-    let jmap_url = &state.config().custom.jmap_url;
-    let client = jmap::create_client(jmap_url, &username, &password).await?;
     let data = jmap::download_blob(&client, &blob_id).await?;
     let filename = params.name.unwrap_or_else(|| "attachment".to_string());
     Ok(Response::builder()
@@ -93,6 +80,5 @@ pub async fn download_attachment(
             "Content-Disposition",
             format!("attachment; filename=\"{filename}\""),
         )
-        .body(Body::from(data))
-        .unwrap())
+        .body(Body::from(data))?)
 }

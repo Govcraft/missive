@@ -1,9 +1,11 @@
 use acton_service::prelude::*;
+use axum::Extension;
 use axum::response::Redirect;
+use secrecy::SecretString;
 
-use crate::config::PostalConfig;
-use crate::jmap::create_client;
-use crate::session::PostalSession;
+use crate::config::MissiveConfig;
+use crate::jmap::{JmapClientCache, create_client};
+use crate::session::MissiveSession;
 
 #[derive(Deserialize)]
 pub struct LoginForm {
@@ -18,17 +20,19 @@ struct LoginTemplate {
 }
 
 pub async fn login(
-    State(state): State<AppState<PostalConfig>>,
-    mut session: TypedSession<PostalSession>,
+    State(state): State<AppState<MissiveConfig>>,
+    Extension(cache): Extension<JmapClientCache>,
+    mut session: TypedSession<MissiveSession>,
     Form(form): Form<LoginForm>,
 ) -> impl IntoResponse {
     let jmap_url = &state.config().custom.jmap_url;
     info!("Login attempt: user={}, jmap_url={jmap_url}", form.username);
     match create_client(jmap_url, &form.username, &form.password).await {
-        Ok(_) => {
+        Ok(client) => {
+            cache.insert(form.username.clone(), std::sync::Arc::new(client));
             let data = session.data_mut();
             data.username = Some(form.username);
-            data.password = Some(form.password);
+            data.password = Some(SecretString::from(form.password));
             let _ = session.save().await;
             Redirect::to("/inbox").into_response()
         }
@@ -39,7 +43,13 @@ pub async fn login(
     }
 }
 
-pub async fn logout(session: TypedSession<PostalSession>) -> impl IntoResponse {
+pub async fn logout(
+    Extension(cache): Extension<JmapClientCache>,
+    session: TypedSession<MissiveSession>,
+) -> impl IntoResponse {
+    if let Some(username) = &session.data().username {
+        cache.remove(username);
+    }
     let _ = session.session().flush().await;
     Redirect::to("/login")
 }

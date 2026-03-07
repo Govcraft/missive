@@ -1,18 +1,79 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use acton_service::prelude::{error, info};
+use chrono::{DateTime, Local};
+use dashmap::DashMap;
 use jmap_client::{
     client::Client,
     email::{self, Email, EmailAddress},
     mailbox::{self, Role},
 };
 
-use crate::error::PostalError;
+use serde::{Deserialize, Serialize};
+
+use crate::error::MissiveError;
+
+macro_rules! define_id {
+    ($name:ident) => {
+        #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+        pub struct $name(String);
+
+        impl $name {
+            pub fn as_str(&self) -> &str {
+                &self.0
+            }
+        }
+
+        impl std::fmt::Display for $name {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str(&self.0)
+            }
+        }
+
+        impl From<&str> for $name {
+            fn from(s: &str) -> Self {
+                Self(s.to_string())
+            }
+        }
+
+        impl From<String> for $name {
+            fn from(s: String) -> Self {
+                Self(s)
+            }
+        }
+    };
+}
+
+define_id!(MailboxId);
+define_id!(EmailId);
+define_id!(BlobId);
+
+pub type JmapClientCache = Arc<DashMap<String, Arc<Client>>>;
+
+pub fn new_client_cache() -> JmapClientCache {
+    Arc::new(DashMap::new())
+}
+
+pub async fn get_or_create_client(
+    cache: &JmapClientCache,
+    jmap_url: &str,
+    username: &str,
+    password: &str,
+) -> Result<Arc<Client>, MissiveError> {
+    if let Some(client) = cache.get(username) {
+        return Ok(Arc::clone(client.value()));
+    }
+    let client = create_client(jmap_url, username, password).await?;
+    let client = Arc::new(client);
+    cache.insert(username.to_string(), Arc::clone(&client));
+    Ok(client)
+}
 use crate::sanitize::sanitize_email_html;
 
 #[derive(Debug, Clone)]
 pub struct MailboxInfo {
-    pub id: String,
+    pub id: MailboxId,
     pub name: String,
     pub role: String,
     pub unread_count: usize,
@@ -20,7 +81,7 @@ pub struct MailboxInfo {
 
 #[derive(Debug, Clone)]
 pub struct EmailSummary {
-    pub id: String,
+    pub id: EmailId,
     pub from: String,
     pub subject: String,
     pub received_at: String,
@@ -43,7 +104,7 @@ pub struct EmailDetail {
 
 #[derive(Debug, Clone)]
 pub struct AttachmentInfo {
-    pub blob_id: String,
+    pub blob_id: BlobId,
     pub name: String,
     pub size_display: String,
 }
@@ -52,7 +113,7 @@ pub async fn create_client(
     jmap_url: &str,
     username: &str,
     password: &str,
-) -> Result<Client, PostalError> {
+) -> Result<Client, MissiveError> {
     let host = jmap_url
         .split("://")
         .nth(1)
@@ -72,9 +133,9 @@ pub async fn create_client(
             let msg = e.to_string();
             error!("JMAP connection error: {msg} | debug: {e:?}");
             if msg.contains("401") || msg.contains("403") || msg.contains("auth") {
-                PostalError::AuthFailed
+                MissiveError::AuthFailed
             } else {
-                PostalError::Jmap(msg)
+                MissiveError::Jmap(msg)
             }
         })?;
 
@@ -82,7 +143,7 @@ pub async fn create_client(
     Ok(client)
 }
 
-pub async fn fetch_mailboxes(client: &Client) -> Result<Vec<MailboxInfo>, PostalError> {
+pub async fn fetch_mailboxes(client: &Client) -> Result<Vec<MailboxInfo>, MissiveError> {
     info!("Fetching mailboxes from JMAP server");
     let mut request = client.build();
     request.get_mailbox().properties([
@@ -94,14 +155,14 @@ pub async fn fetch_mailboxes(client: &Client) -> Result<Vec<MailboxInfo>, Postal
 
     let response = request.send_get_mailbox().await.map_err(|e| {
         error!("JMAP fetch mailboxes error: {e}");
-        PostalError::Jmap(e.to_string())
+        MissiveError::Jmap(e.to_string())
     })?;
 
     let mut mailboxes: Vec<MailboxInfo> = response
         .list()
         .iter()
         .map(|m| MailboxInfo {
-            id: m.id().unwrap_or_default().to_string(),
+            id: MailboxId::from(m.id().unwrap_or_default()),
             name: m.name().unwrap_or("(unnamed)").to_string(),
             role: role_to_string(&m.role()),
             unread_count: m.unread_emails(),
@@ -123,14 +184,14 @@ pub async fn fetch_mailboxes(client: &Client) -> Result<Vec<MailboxInfo>, Postal
 
 pub async fn fetch_emails(
     client: &Client,
-    mailbox_id: &str,
+    mailbox_id: &MailboxId,
     position: usize,
     limit: usize,
-) -> Result<Vec<EmailSummary>, PostalError> {
+) -> Result<Vec<EmailSummary>, MissiveError> {
     info!("Fetching emails: mailbox_id={mailbox_id}, position={position}, limit={limit}");
     let mut request = client.build();
     let query_req = request.query_email();
-    query_req.filter(email::query::Filter::in_mailbox(mailbox_id));
+    query_req.filter(email::query::Filter::in_mailbox(mailbox_id.as_str()));
     query_req.sort([email::query::Comparator::received_at().descending()]);
     query_req.position(position as i32);
     query_req.limit(limit);
@@ -140,7 +201,7 @@ pub async fn fetch_emails(
         .await
         .map_err(|e| {
             error!("JMAP email query error: {e}");
-            PostalError::Jmap(e.to_string())
+            MissiveError::Jmap(e.to_string())
         })?;
 
     let ids: Vec<&str> = query_response.ids().iter().map(|s| s.as_str()).collect();
@@ -163,17 +224,17 @@ pub async fn fetch_emails(
 
     let response = request.send_get_email().await.map_err(|e| {
         error!("JMAP get emails error: {e}");
-        PostalError::Jmap(e.to_string())
+        MissiveError::Jmap(e.to_string())
     })?;
 
     let emails: Vec<EmailSummary> = response
         .list()
         .iter()
         .map(|e| EmailSummary {
-            id: e.id().unwrap_or_default().to_string(),
+            id: EmailId::from(e.id().unwrap_or_default()),
             from: format_addresses(e.from()),
             subject: e.subject().unwrap_or("(no subject)").to_string(),
-            received_at: format_timestamp(e.received_at().unwrap_or(0)),
+            received_at: format_timestamp(e.received_at().unwrap_or(0), Local::now()),
             preview: e.preview().unwrap_or_default().to_string(),
             is_unread: !e.keywords().contains(&"$seen"),
             has_attachment: e.has_attachment(),
@@ -185,11 +246,11 @@ pub async fn fetch_emails(
 
 pub async fn fetch_email_detail(
     client: &Client,
-    email_id: &str,
-) -> Result<EmailDetail, PostalError> {
+    email_id: &EmailId,
+) -> Result<EmailDetail, MissiveError> {
     info!("Fetching email detail: id={email_id}");
     let mut request = client.build();
-    let get_request = request.get_email().ids([email_id]);
+    let get_request = request.get_email().ids([email_id.as_str()]);
     get_request.properties([
         email::Property::From,
         email::Property::To,
@@ -206,13 +267,13 @@ pub async fn fetch_email_detail(
 
     let response = request.send_get_email().await.map_err(|e| {
         error!("JMAP get email detail error: {e}");
-        PostalError::Jmap(e.to_string())
+        MissiveError::Jmap(e.to_string())
     })?;
 
     let email = response
         .list()
         .first()
-        .ok_or_else(|| PostalError::Jmap("Email not found".to_string()))?;
+        .ok_or_else(|| MissiveError::Jmap("Email not found".to_string()))?;
 
     let body_text = extract_text_body(email);
     let cid_map = build_cid_map(email);
@@ -226,7 +287,7 @@ pub async fn fetch_email_detail(
             if part.content_id().is_some() {
                 return None;
             }
-            let blob_id = part.blob_id()?.to_string();
+            let blob_id = BlobId::from(part.blob_id()?.to_string());
             Some(AttachmentInfo {
                 name: part.name().unwrap_or("attachment").to_string(),
                 size_display: format_file_size(part.size()),
@@ -240,7 +301,7 @@ pub async fn fetch_email_detail(
         to: format_addresses(email.to()),
         cc: format_addresses(email.cc()),
         subject: email.subject().unwrap_or("(no subject)").to_string(),
-        received_at: format_timestamp(email.received_at().unwrap_or(0)),
+        received_at: format_timestamp(email.received_at().unwrap_or(0), Local::now()),
         body_text,
         body_html,
         attachments,
@@ -257,17 +318,16 @@ fn format_file_size(bytes: usize) -> String {
     }
 }
 
-pub async fn download_blob(client: &Client, blob_id: &str) -> Result<Vec<u8>, PostalError> {
+pub async fn download_blob(client: &Client, blob_id: &BlobId) -> Result<Vec<u8>, MissiveError> {
     info!("Downloading blob: id={blob_id}");
-    client.download(blob_id).await.map_err(|e| {
+    client.download(blob_id.as_str()).await.map_err(|e| {
         error!("JMAP blob download error: {e}");
-        PostalError::Jmap(e.to_string())
+        MissiveError::Jmap(e.to_string())
     })
 }
 
-fn format_timestamp(ts: i64) -> String {
-    use chrono::{DateTime, Local, Utc};
-    let now = Local::now();
+fn format_timestamp(ts: i64, now: DateTime<Local>) -> String {
+    use chrono::Utc;
     let dt: DateTime<Local> = DateTime::<Utc>::from_timestamp(ts, 0)
         .unwrap_or_default()
         .with_timezone(&Local);
@@ -367,5 +427,196 @@ fn role_sort_priority(role: &str) -> u8 {
         "trash" => 5,
         "" => 6,
         _ => 7,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::unwrap_used)]
+
+    use super::*;
+    use chrono::TimeZone;
+    use jmap_client::mailbox::Role;
+
+    // --- format_timestamp tests ---
+
+    #[test]
+    fn test_format_timestamp_today() {
+        let now = Local.with_ymd_and_hms(2025, 6, 15, 18, 0, 0).unwrap();
+        // 3:30 PM on same day in UTC => convert to local
+        let ts = chrono::Utc
+            .with_ymd_and_hms(2025, 6, 15, 15, 30, 0)
+            .unwrap()
+            .timestamp();
+        let result = format_timestamp(ts, now);
+        // Should show time only (no date), e.g. "3:30 PM" or local equivalent
+        assert!(
+            result.contains(":30"),
+            "Expected time format, got: {result}"
+        );
+        assert!(
+            !result.contains("Jun"),
+            "Should not contain month for today, got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_format_timestamp_this_week() {
+        // "now" is Sunday Jun 15, timestamp is Wednesday Jun 11 (4 days ago)
+        let now = Local.with_ymd_and_hms(2025, 6, 15, 18, 0, 0).unwrap();
+        let dt_target = Local.with_ymd_and_hms(2025, 6, 11, 15, 30, 0).unwrap();
+        let ts = dt_target.timestamp();
+        let result = format_timestamp(ts, now);
+        // Should show day + time like "Wed 3:30 PM"
+        assert!(result.contains("Wed"), "Expected day name, got: {result}");
+    }
+
+    #[test]
+    fn test_format_timestamp_this_year() {
+        // "now" is Jun 15, timestamp is Jan 15 (same year, >7 days ago)
+        let now = Local.with_ymd_and_hms(2025, 6, 15, 18, 0, 0).unwrap();
+        let dt_target = Local.with_ymd_and_hms(2025, 1, 15, 15, 30, 0).unwrap();
+        let ts = dt_target.timestamp();
+        let result = format_timestamp(ts, now);
+        assert!(
+            result.contains("Jan") && result.contains("15"),
+            "Expected 'Jan 15', got: {result}"
+        );
+        assert!(
+            !result.contains("2025"),
+            "Should not contain year for same year, got: {result}"
+        );
+    }
+
+    #[test]
+    fn test_format_timestamp_older_year() {
+        let now = Local.with_ymd_and_hms(2025, 6, 15, 18, 0, 0).unwrap();
+        let dt_target = Local.with_ymd_and_hms(2023, 1, 15, 15, 30, 0).unwrap();
+        let ts = dt_target.timestamp();
+        let result = format_timestamp(ts, now);
+        assert!(
+            result.contains("Jan") && result.contains("15") && result.contains("2023"),
+            "Expected 'Jan 15, 2023', got: {result}"
+        );
+    }
+
+    // --- format_file_size tests ---
+
+    #[test]
+    fn test_format_file_size_bytes() {
+        assert_eq!(format_file_size(500), "500 B");
+    }
+
+    #[test]
+    fn test_format_file_size_kb() {
+        let result = format_file_size(2048);
+        assert_eq!(result, "2.0 KB");
+    }
+
+    #[test]
+    fn test_format_file_size_mb() {
+        let result = format_file_size(2 * 1024 * 1024);
+        assert_eq!(result, "2.0 MB");
+    }
+
+    // --- format_addresses tests ---
+
+    #[test]
+    fn test_format_addresses_none() {
+        assert_eq!(format_addresses(None), "");
+    }
+
+    #[test]
+    fn test_format_addresses_with_name() {
+        let addrs: Vec<EmailAddress> = serde_json::from_value(serde_json::json!([
+            {"name": "Alice", "email": "alice@example.com"}
+        ]))
+        .unwrap();
+        assert_eq!(format_addresses(Some(&addrs)), "Alice");
+    }
+
+    #[test]
+    fn test_format_addresses_without_name() {
+        let addrs: Vec<EmailAddress> = serde_json::from_value(serde_json::json!([
+            {"name": null, "email": "bob@example.com"}
+        ]))
+        .unwrap();
+        assert_eq!(format_addresses(Some(&addrs)), "bob@example.com");
+    }
+
+    #[test]
+    fn test_format_addresses_multiple() {
+        let addrs: Vec<EmailAddress> = serde_json::from_value(serde_json::json!([
+            {"name": "Alice", "email": "alice@example.com"},
+            {"name": null, "email": "bob@example.com"}
+        ]))
+        .unwrap();
+        assert_eq!(format_addresses(Some(&addrs)), "Alice, bob@example.com");
+    }
+
+    // --- role_to_string tests ---
+
+    #[test]
+    fn test_role_to_string_known() {
+        assert_eq!(role_to_string(&Role::Inbox), "inbox");
+        assert_eq!(role_to_string(&Role::Sent), "sent");
+        assert_eq!(role_to_string(&Role::Drafts), "drafts");
+        assert_eq!(role_to_string(&Role::Trash), "trash");
+        assert_eq!(role_to_string(&Role::Junk), "junk");
+        assert_eq!(role_to_string(&Role::Archive), "archive");
+        assert_eq!(role_to_string(&Role::Important), "important");
+    }
+
+    #[test]
+    fn test_role_to_string_other() {
+        assert_eq!(role_to_string(&Role::Other("custom".into())), "custom");
+    }
+
+    #[test]
+    fn test_role_to_string_none() {
+        assert_eq!(role_to_string(&Role::None), "");
+    }
+
+    // --- typed ID tests ---
+
+    #[test]
+    fn typed_id_from_str() {
+        let id = MailboxId::from("abc");
+        assert_eq!(id.as_str(), "abc");
+    }
+
+    #[test]
+    fn typed_id_from_string() {
+        let id = EmailId::from("123".to_string());
+        assert_eq!(id.as_str(), "123");
+    }
+
+    #[test]
+    fn typed_id_display() {
+        let id = BlobId::from("blob-xyz");
+        assert_eq!(format!("{id}"), "blob-xyz");
+    }
+
+    #[test]
+    fn typed_id_serde_roundtrip() {
+        let id = MailboxId::from("test-id");
+        let json = serde_json::to_string(&id).unwrap();
+        assert_eq!(json, "\"test-id\"");
+        let deserialized: MailboxId = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized, id);
+    }
+
+    // --- role_sort_priority tests ---
+
+    #[test]
+    fn test_role_sort_priority() {
+        assert_eq!(role_sort_priority("inbox"), 0);
+        assert_eq!(role_sort_priority("drafts"), 1);
+        assert_eq!(role_sort_priority("sent"), 2);
+        assert_eq!(role_sort_priority("archive"), 3);
+        assert_eq!(role_sort_priority("junk"), 4);
+        assert_eq!(role_sort_priority("trash"), 5);
+        assert_eq!(role_sort_priority(""), 6);
+        assert_eq!(role_sort_priority("other"), 7);
     }
 }

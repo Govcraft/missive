@@ -1,7 +1,7 @@
 use acton_service::prelude::*;
 use axum::response::Redirect;
 
-use crate::session::PostalSession;
+use crate::session::MissiveSession;
 
 #[derive(Template)]
 #[template(path = "login.html")]
@@ -33,7 +33,7 @@ struct ContactsTemplate {
     page_title: String,
 }
 
-pub async fn index(session: TypedSession<PostalSession>) -> impl IntoResponse {
+pub async fn index(session: TypedSession<MissiveSession>) -> impl IntoResponse {
     if session.data().username.is_some() {
         Redirect::to("/inbox").into_response()
     } else {
@@ -45,19 +45,19 @@ pub async fn login_page() -> impl IntoResponse {
     HtmlTemplate::page(LoginPageTemplate { error: None })
 }
 
-pub async fn inbox(session: TypedSession<PostalSession>) -> impl IntoResponse {
+pub async fn inbox(session: TypedSession<MissiveSession>) -> impl IntoResponse {
     match &session.data().username {
         Some(username) => HtmlTemplate::page(InboxTemplate {
             username: username.clone(),
             active_app: "mail".to_string(),
-            page_title: "Postal".to_string(),
+            page_title: "Missive".to_string(),
         })
         .into_response(),
         None => Redirect::to("/login").into_response(),
     }
 }
 
-pub async fn calendar(session: TypedSession<PostalSession>) -> impl IntoResponse {
+pub async fn calendar(session: TypedSession<MissiveSession>) -> impl IntoResponse {
     match &session.data().username {
         Some(username) => HtmlTemplate::page(CalendarTemplate {
             username: username.clone(),
@@ -69,7 +69,7 @@ pub async fn calendar(session: TypedSession<PostalSession>) -> impl IntoResponse
     }
 }
 
-pub async fn contacts(session: TypedSession<PostalSession>) -> impl IntoResponse {
+pub async fn contacts(session: TypedSession<MissiveSession>) -> impl IntoResponse {
     match &session.data().username {
         Some(username) => HtmlTemplate::page(ContactsTemplate {
             username: username.clone(),

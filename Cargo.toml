@@ -1,5 +1,5 @@
 [package]
-name = "postal"
+name = "missive"
 version = "0.1.0"
 edition = "2024"
 
@@ -9,7 +9,11 @@ ammonia = "4.1.2"
 askama = "0.15.4"
 axum = "0.8.8"
 chrono = "0.4.44"
+dashmap = "6.1.0"
 jmap-client = "0.4.0"
+secrecy = { version = "0.10.3", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
-thiserror = "2.0.18"
 tower-http = { version = "0.6.8", features = ["fs"] }
+
+[dev-dependencies]
+serde_json = "1.0.149"

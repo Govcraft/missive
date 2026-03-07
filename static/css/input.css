@@ -4,7 +4,7 @@
     --font-sans: "Inter", sans-serif;
 }
 
-.postal-grid {
+.missive-grid {
     display: grid;
     grid-template-columns: 250px 350px 1fr;
     flex: 1;

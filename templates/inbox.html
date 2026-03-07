@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Inbox - Postal{% endblock %}
+{% block title %}Inbox - Missive{% endblock %}
 
 {% block content %}
 {% include "partials/app_nav.html" %}
@@ -8,7 +8,7 @@
 <div class="lg:pl-20">
     {% include "partials/app_header.html" %}
 
-    <main class="postal-grid">
+    <main class="missive-grid">
         <!-- Mailbox sidebar -->
         <div id="mailbox-pane" class="border-r border-gray-200 bg-gray-50 overflow-hidden overflow-y-auto shadow-sm sm:rounded-md"
              hx-get="/api/v1/mailboxes" hx-trigger="load" hx-swap="innerHTML">

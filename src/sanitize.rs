@@ -188,9 +188,10 @@ mod tests {
 
     #[test]
     fn resolves_cid_urls() {
-        let cid_map = HashMap::from([
-            ("image001@example.com".to_string(), "blob-abc123".to_string()),
-        ]);
+        let cid_map = HashMap::from([(
+            "image001@example.com".to_string(),
+            "blob-abc123".to_string(),
+        )]);
         let input = r#"<img src="cid:image001@example.com" alt="logo">"#;
         let result = sanitize_email_html(input, &cid_map);
         assert!(result.contains("/api/v1/attachments/blob-abc123"));

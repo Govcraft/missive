@@ -1,6 +1,12 @@
+#![forbid(unsafe_code)]
+#![deny(clippy::unwrap_used, clippy::expect_used)]
+
 use acton_service::prelude::*;
 use acton_service::session::{SessionConfig, create_memory_session_layer};
+use axum::Extension;
 use tower_http::services::ServeDir;
+
+use crate::jmap::new_client_cache;
 
 mod config;
 mod error;
@@ -9,14 +15,15 @@ mod routes;
 mod sanitize;
 mod session;
 
-use config::PostalConfig;
+use config::MissiveConfig;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let session_config = SessionConfig::default();
     let session_layer = create_memory_session_layer(&session_config);
+    let client_cache = new_client_cache();
 
-    let mut config = Config::<PostalConfig>::load()?;
+    let mut config = Config::<MissiveConfig>::load()?;
     info!(
         "Loaded config: service={}, jmap_url={}",
         config.service.name, config.custom.jmap_url
@@ -38,7 +45,7 @@ async fn main() -> Result<()> {
         }
     }
 
-    let routes = VersionedApiBuilder::<PostalConfig>::with_config()
+    let routes = VersionedApiBuilder::<MissiveConfig>::with_config()
         .with_base_path("/api")
         .add_version(ApiVersion::V1, |router| {
             router
@@ -49,6 +56,7 @@ async fn main() -> Result<()> {
                     "/attachments/{blob_id}",
                     get(routes::emails::download_attachment),
                 )
+                .layer(Extension(client_cache.clone()))
                 .layer(session_layer.clone())
         })
         .with_frontend_routes(|router| {
@@ -63,11 +71,12 @@ async fn main() -> Result<()> {
                 .route("/calendar", get(routes::pages::calendar))
                 .route("/contacts", get(routes::pages::contacts))
                 .nest_service("/static", ServeDir::new("static"))
+                .layer(Extension(client_cache))
                 .layer(session_layer)
         })
         .build_routes();
 
-    ServiceBuilder::<PostalConfig>::new()
+    ServiceBuilder::<MissiveConfig>::new()
         .with_config(config)
         .with_routes(routes)
         .build()
