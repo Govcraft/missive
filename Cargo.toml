@@ -7,6 +7,7 @@ edition = "2024"
 acton-service = { version = "0.16.0", features = ["htmx-full"] }
 askama = "0.15.4"
 axum = "0.8.8"
+chrono = "0.4.44"
 jmap-client = "0.4.0"
 serde = { version = "1.0.228", features = ["derive"] }
 thiserror = "2.0.18"

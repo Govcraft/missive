@@ -20,7 +20,7 @@ pub struct EmailSummary {
     pub id: String,
     pub from: String,
     pub subject: String,
-    pub received_at: i64,
+    pub received_at: String,
     pub preview: String,
     pub is_unread: bool,
 }
@@ -31,7 +31,7 @@ pub struct EmailDetail {
     pub to: String,
     pub cc: String,
     pub subject: String,
-    pub received_at: i64,
+    pub received_at: String,
     pub body_text: String,
 }
 
@@ -160,7 +160,7 @@ pub async fn fetch_emails(
             id: e.id().unwrap_or_default().to_string(),
             from: format_addresses(e.from()),
             subject: e.subject().unwrap_or("(no subject)").to_string(),
-            received_at: e.received_at().unwrap_or(0),
+            received_at: format_timestamp(e.received_at().unwrap_or(0)),
             preview: e.preview().unwrap_or_default().to_string(),
             is_unread: !e.keywords().contains(&"$seen"),
         })
@@ -207,9 +207,27 @@ pub async fn fetch_email_detail(
         to: format_addresses(email.to()),
         cc: format_addresses(email.cc()),
         subject: email.subject().unwrap_or("(no subject)").to_string(),
-        received_at: email.received_at().unwrap_or(0),
+        received_at: format_timestamp(email.received_at().unwrap_or(0)),
         body_text,
     })
+}
+
+fn format_timestamp(ts: i64) -> String {
+    use chrono::{DateTime, Local, Utc};
+    let now = Local::now();
+    let dt: DateTime<Local> = DateTime::<Utc>::from_timestamp(ts, 0)
+        .unwrap_or_default()
+        .with_timezone(&Local);
+
+    if dt.date_naive() == now.date_naive() {
+        dt.format("%l:%M %p").to_string().trim().to_string()
+    } else if now.signed_duration_since(dt).num_days() < 7 {
+        dt.format("%a %l:%M %p").to_string().trim().to_string()
+    } else if dt.format("%Y").to_string() == now.format("%Y").to_string() {
+        dt.format("%b %e").to_string().trim().to_string()
+    } else {
+        dt.format("%b %e, %Y").to_string().trim().to_string()
+    }
 }
 
 fn extract_text_body(email: &Email) -> String {
