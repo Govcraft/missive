@@ -23,6 +23,7 @@ pub struct EmailSummary {
     pub received_at: String,
     pub preview: String,
     pub is_unread: bool,
+    pub has_attachment: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -148,6 +149,7 @@ pub async fn fetch_emails(
         email::Property::ReceivedAt,
         email::Property::Preview,
         email::Property::Keywords,
+        email::Property::HasAttachment,
     ]);
 
     let response = request
@@ -168,6 +170,7 @@ pub async fn fetch_emails(
             received_at: format_timestamp(e.received_at().unwrap_or(0)),
             preview: e.preview().unwrap_or_default().to_string(),
             is_unread: !e.keywords().contains(&"$seen"),
+            has_attachment: e.has_attachment(),
         })
         .collect();
 

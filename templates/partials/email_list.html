@@ -16,8 +16,13 @@
         <span class="text-sm truncate max-w-[200px]{% if email.is_unread %} font-semibold text-gray-900{% else %} text-gray-600{% endif %}">
             {{ email.from }}
         </span>
-        <span class="text-xs text-gray-400 ml-2 whitespace-nowrap">
-            {{ email.received_at }}
+        <span class="flex items-center gap-1 ml-2 whitespace-nowrap">
+            {% if email.has_attachment %}
+            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+            </svg>
+            {% endif %}
+            <span class="text-xs text-gray-400">{{ email.received_at }}</span>
         </span>
     </div>
     <div class="text-sm truncate{% if email.is_unread %} font-medium text-gray-800{% else %} text-gray-600{% endif %}">
