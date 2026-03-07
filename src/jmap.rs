@@ -114,21 +114,26 @@ pub async fn fetch_mailboxes(client: &Client) -> Result<Vec<MailboxInfo>, Postal
 pub async fn fetch_emails(
     client: &Client,
     mailbox_id: &str,
+    position: usize,
     limit: usize,
 ) -> Result<Vec<EmailSummary>, PostalError> {
-    info!("Fetching emails: mailbox_id={mailbox_id}, limit={limit}");
-    let query_response = client
-        .email_query(
-            Some(email::query::Filter::in_mailbox(mailbox_id)),
-            Some([email::query::Comparator::received_at().descending()]),
-        )
+    info!("Fetching emails: mailbox_id={mailbox_id}, position={position}, limit={limit}");
+    let mut request = client.build();
+    let query_req = request.query_email();
+    query_req.filter(email::query::Filter::in_mailbox(mailbox_id));
+    query_req.sort([email::query::Comparator::received_at().descending()]);
+    query_req.position(position as i32);
+    query_req.limit(limit);
+
+    let query_response = request
+        .send_single::<jmap_client::core::query::QueryResponse>()
         .await
         .map_err(|e| {
             error!("JMAP email query error: {e}");
             PostalError::Jmap(e.to_string())
         })?;
 
-    let ids: Vec<&str> = query_response.ids().iter().take(limit).map(|s| s.as_str()).collect();
+    let ids: Vec<&str> = query_response.ids().iter().map(|s| s.as_str()).collect();
     info!("Email query returned {} ids", ids.len());
     if ids.is_empty() {
         return Ok(Vec::new());

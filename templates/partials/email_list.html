@@ -1,31 +1,43 @@
 {% if emails.is_empty() %}
+{% if next_position.is_none() %}
 <div class="flex items-center justify-center h-full text-sm text-gray-400">
     No emails in this mailbox
 </div>
+{% endif %}
 {% else %}
-<div class="divide-y divide-gray-100">
-    {% for email in emails %}
-    <a href="#"
-       hx-get="/api/v1/emails/{{ email.id }}"
-       hx-target="#email-detail-pane"
-       hx-swap="innerHTML"
-       class="email-row block px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors{% if email.is_unread %} bg-white{% else %} bg-gray-50{% endif %}"
-       onclick="document.querySelectorAll('.email-row').forEach(el => el.classList.remove('bg-blue-100')); this.classList.add('bg-blue-100');">
-        <div class="flex items-baseline justify-between mb-1">
-            <span class="text-sm truncate max-w-[200px]{% if email.is_unread %} font-semibold text-gray-900{% else %} text-gray-600{% endif %}">
-                {{ email.from }}
-            </span>
-            <span class="text-xs text-gray-400 ml-2 whitespace-nowrap">
-                {{ email.received_at }}
-            </span>
-        </div>
-        <div class="text-sm truncate{% if email.is_unread %} font-medium text-gray-800{% else %} text-gray-600{% endif %}">
-            {{ email.subject }}
-        </div>
-        <div class="text-xs text-gray-400 truncate mt-0.5">
-            {{ email.preview }}
-        </div>
-    </a>
-    {% endfor %}
+{% for email in emails %}
+<a href="#"
+   hx-get="/api/v1/emails/{{ email.id }}"
+   hx-target="#email-detail-pane"
+   hx-swap="innerHTML"
+   class="email-row block px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100{% if email.is_unread %} bg-white{% else %} bg-gray-50{% endif %}"
+   onclick="document.querySelectorAll('.email-row').forEach(el => el.classList.remove('bg-blue-100')); this.classList.add('bg-blue-100');">
+    <div class="flex items-baseline justify-between mb-1">
+        <span class="text-sm truncate max-w-[200px]{% if email.is_unread %} font-semibold text-gray-900{% else %} text-gray-600{% endif %}">
+            {{ email.from }}
+        </span>
+        <span class="text-xs text-gray-400 ml-2 whitespace-nowrap">
+            {{ email.received_at }}
+        </span>
+    </div>
+    <div class="text-sm truncate{% if email.is_unread %} font-medium text-gray-800{% else %} text-gray-600{% endif %}">
+        {{ email.subject }}
+    </div>
+    <div class="text-xs text-gray-400 truncate mt-0.5">
+        {{ email.preview }}
+    </div>
+</a>
+{% endfor %}
+{% if let Some(pos) = next_position %}
+<div hx-get="/api/v1/emails?mailbox_id={{ mailbox_id }}&position={{ pos }}"
+     hx-trigger="revealed"
+     hx-swap="outerHTML"
+     class="flex items-center justify-center py-4 text-sm text-gray-400">
+    <svg class="animate-spin h-4 w-4 mr-2 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+    </svg>
+    Loading more...
 </div>
+{% endif %}
 {% endif %}
