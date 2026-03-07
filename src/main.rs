@@ -60,6 +60,8 @@ async fn main() -> Result<()> {
                 )
                 .route("/logout", post(routes::auth::logout))
                 .route("/inbox", get(routes::pages::inbox))
+                .route("/calendar", get(routes::pages::calendar))
+                .route("/contacts", get(routes::pages::contacts))
                 .nest_service("/static", ServeDir::new("static"))
                 .layer(session_layer)
         })

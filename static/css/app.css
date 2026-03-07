@@ -1,5 +1,6 @@
 .postal-grid {
     display: grid;
     grid-template-columns: 250px 350px 1fr;
-    height: calc(100vh - 3rem);
+    flex: 1;
+    min-height: 0;
 }
