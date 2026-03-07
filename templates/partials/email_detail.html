@@ -45,5 +45,17 @@
 
     <hr class="border-gray-200 mb-4 mt-4">
 
+    {% match email.body_html %}
+    {% when Some with (html) %}
+    <iframe
+        sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+        srcdoc="{{ html }}"
+        class="w-full border-0"
+        style="min-height: 200px;"
+        referrerpolicy="no-referrer"
+        title="Email content">
+    </iframe>
+    {% when None %}
     <pre class="whitespace-pre-wrap text-sm text-gray-800 font-sans leading-relaxed">{{ email.body_text }}</pre>
+    {% endmatch %}
 </div>

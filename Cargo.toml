@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 acton-service = { version = "0.16.0", features = ["htmx-full"] }
+ammonia = "4.1.2"
 askama = "0.15.4"
 axum = "0.8.8"
 chrono = "0.4.44"

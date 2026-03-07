@@ -16,14 +16,17 @@ impl IntoResponse for PostalError {
         error!("PostalError: {self}");
         let (status, message) = match &self {
             PostalError::Jmap(msg) => (StatusCode::BAD_GATEWAY, msg.clone()),
-            PostalError::AuthFailed => (
-                StatusCode::UNAUTHORIZED,
-                "Invalid credentials".to_string(),
-            ),
+            PostalError::AuthFailed => {
+                (StatusCode::UNAUTHORIZED, "Invalid credentials".to_string())
+            }
             PostalError::SessionRequired => {
                 return Redirect::to("/login").into_response();
             }
         };
-        (status, Html(format!("<div class=\"error\">{message}</div>"))).into_response()
+        (
+            status,
+            Html(format!("<div class=\"error\">{message}</div>")),
+        )
+            .into_response()
     }
 }

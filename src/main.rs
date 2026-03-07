@@ -1,11 +1,12 @@
 use acton_service::prelude::*;
-use acton_service::session::{create_memory_session_layer, SessionConfig};
+use acton_service::session::{SessionConfig, create_memory_session_layer};
 use tower_http::services::ServeDir;
 
 mod config;
 mod error;
 mod jmap;
 mod routes;
+mod sanitize;
 mod session;
 
 use config::PostalConfig;
@@ -26,12 +27,12 @@ async fn main() -> Result<()> {
         // since #[serde(flatten)] may not work with figment
         if let Ok(raw) = std::fs::read_to_string("config.toml") {
             for line in raw.lines() {
-                if let Some(val) = line.strip_prefix("jmap_url") {
-                    if let Some(val) = val.trim().strip_prefix('=') {
-                        let val = val.trim().trim_matches('"');
-                        config.custom.jmap_url = val.to_string();
-                        info!("Loaded jmap_url from config.toml: {val}");
-                    }
+                if let Some(val) = line.strip_prefix("jmap_url")
+                    && let Some(val) = val.trim().strip_prefix('=')
+                {
+                    let val = val.trim().trim_matches('"');
+                    config.custom.jmap_url = val.to_string();
+                    info!("Loaded jmap_url from config.toml: {val}");
                 }
             }
         }
@@ -44,7 +45,10 @@ async fn main() -> Result<()> {
                 .route("/mailboxes", get(routes::mailboxes::list_mailboxes))
                 .route("/emails", get(routes::emails::list_emails))
                 .route("/emails/{id}", get(routes::emails::get_email))
-                .route("/attachments/{blob_id}", get(routes::emails::download_attachment))
+                .route(
+                    "/attachments/{blob_id}",
+                    get(routes::emails::download_attachment),
+                )
                 .layer(session_layer.clone())
         })
         .with_frontend_routes(|router| {

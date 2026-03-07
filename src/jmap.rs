@@ -6,6 +6,7 @@ use jmap_client::{
 };
 
 use crate::error::PostalError;
+use crate::sanitize::sanitize_email_html;
 
 #[derive(Debug, Clone)]
 pub struct MailboxInfo {
@@ -34,6 +35,7 @@ pub struct EmailDetail {
     pub subject: String,
     pub received_at: String,
     pub body_text: String,
+    pub body_html: Option<String>,
     pub attachments: Vec<AttachmentInfo>,
 }
 
@@ -88,13 +90,10 @@ pub async fn fetch_mailboxes(client: &Client) -> Result<Vec<MailboxInfo>, Postal
         mailbox::Property::UnreadEmails,
     ]);
 
-    let response = request
-        .send_get_mailbox()
-        .await
-        .map_err(|e| {
-            error!("JMAP fetch mailboxes error: {e}");
-            PostalError::Jmap(e.to_string())
-        })?;
+    let response = request.send_get_mailbox().await.map_err(|e| {
+        error!("JMAP fetch mailboxes error: {e}");
+        PostalError::Jmap(e.to_string())
+    })?;
 
     let mut mailboxes: Vec<MailboxInfo> = response
         .list()
@@ -160,13 +159,10 @@ pub async fn fetch_emails(
         email::Property::HasAttachment,
     ]);
 
-    let response = request
-        .send_get_email()
-        .await
-        .map_err(|e| {
-            error!("JMAP get emails error: {e}");
-            PostalError::Jmap(e.to_string())
-        })?;
+    let response = request.send_get_email().await.map_err(|e| {
+        error!("JMAP get emails error: {e}");
+        PostalError::Jmap(e.to_string())
+    })?;
 
     let emails: Vec<EmailSummary> = response
         .list()
@@ -200,17 +196,16 @@ pub async fn fetch_email_detail(
         email::Property::ReceivedAt,
         email::Property::BodyValues,
         email::Property::TextBody,
+        email::Property::HtmlBody,
         email::Property::Attachments,
     ]);
     get_request.arguments().fetch_text_body_values(true);
+    get_request.arguments().fetch_html_body_values(true);
 
-    let response = request
-        .send_get_email()
-        .await
-        .map_err(|e| {
-            error!("JMAP get email detail error: {e}");
-            PostalError::Jmap(e.to_string())
-        })?;
+    let response = request.send_get_email().await.map_err(|e| {
+        error!("JMAP get email detail error: {e}");
+        PostalError::Jmap(e.to_string())
+    })?;
 
     let email = response
         .list()
@@ -218,6 +213,7 @@ pub async fn fetch_email_detail(
         .ok_or_else(|| PostalError::Jmap("Email not found".to_string()))?;
 
     let body_text = extract_text_body(email);
+    let body_html = extract_html_body(email);
 
     let attachments = email
         .attachments()
@@ -240,6 +236,7 @@ pub async fn fetch_email_detail(
         subject: email.subject().unwrap_or("(no subject)").to_string(),
         received_at: format_timestamp(email.received_at().unwrap_or(0)),
         body_text,
+        body_html,
         attachments,
     })
 }
@@ -256,13 +253,10 @@ fn format_file_size(bytes: usize) -> String {
 
 pub async fn download_blob(client: &Client, blob_id: &str) -> Result<Vec<u8>, PostalError> {
     info!("Downloading blob: id={blob_id}");
-    client
-        .download(blob_id)
-        .await
-        .map_err(|e| {
-            error!("JMAP blob download error: {e}");
-            PostalError::Jmap(e.to_string())
-        })
+    client.download(blob_id).await.map_err(|e| {
+        error!("JMAP blob download error: {e}");
+        PostalError::Jmap(e.to_string())
+    })
 }
 
 fn format_timestamp(ts: i64) -> String {
@@ -281,6 +275,22 @@ fn format_timestamp(ts: i64) -> String {
     } else {
         dt.format("%b %e, %Y").to_string().trim().to_string()
     }
+}
+
+fn extract_html_body(email: &Email) -> Option<String> {
+    if let Some(html_parts) = email.html_body() {
+        for part in html_parts {
+            if let Some(part_id) = part.part_id()
+                && let Some(body_value) = email.body_value(part_id)
+            {
+                let raw_html = body_value.value();
+                if !raw_html.is_empty() {
+                    return Some(sanitize_email_html(raw_html));
+                }
+            }
+        }
+    }
+    None
 }
 
 fn extract_text_body(email: &Email) -> String {

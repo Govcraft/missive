@@ -2,9 +2,9 @@ use acton_service::prelude::*;
 
 use crate::config::PostalConfig;
 use crate::error::PostalError;
-use axum::body::Body;
 use crate::jmap::{self, EmailDetail, EmailSummary};
-use crate::session::{get_credentials, PostalSession};
+use crate::session::{PostalSession, get_credentials};
+use axum::body::Body;
 
 #[derive(Deserialize)]
 pub struct EmailListParams {
@@ -33,13 +33,17 @@ pub async fn list_emails(
     Query(params): Query<EmailListParams>,
 ) -> std::result::Result<impl IntoResponse, PostalError> {
     info!("list_emails: mailbox_id={}", params.mailbox_id);
-    let (username, password) =
-        get_credentials(&session).ok_or(PostalError::SessionRequired)?;
+    let (username, password) = get_credentials(&session).ok_or(PostalError::SessionRequired)?;
     let jmap_url = &state.config().custom.jmap_url;
     let client = jmap::create_client(jmap_url, &username, &password).await?;
     let page_size = 50;
-    let emails = jmap::fetch_emails(&client, &params.mailbox_id, params.position, page_size).await?;
-    info!("list_emails: returning {} emails at position {}", emails.len(), params.position);
+    let emails =
+        jmap::fetch_emails(&client, &params.mailbox_id, params.position, page_size).await?;
+    info!(
+        "list_emails: returning {} emails at position {}",
+        emails.len(),
+        params.position
+    );
     let next_position = if emails.len() == page_size {
         Some(params.position + page_size)
     } else {
@@ -58,8 +62,7 @@ pub async fn get_email(
     Path(id): Path<String>,
 ) -> std::result::Result<impl IntoResponse, PostalError> {
     info!("get_email: id={id}");
-    let (username, password) =
-        get_credentials(&session).ok_or(PostalError::SessionRequired)?;
+    let (username, password) = get_credentials(&session).ok_or(PostalError::SessionRequired)?;
     let jmap_url = &state.config().custom.jmap_url;
     let client = jmap::create_client(jmap_url, &username, &password).await?;
     let email = jmap::fetch_email_detail(&client, &id).await?;
@@ -79,8 +82,7 @@ pub async fn download_attachment(
     Query(params): Query<DownloadParams>,
 ) -> std::result::Result<impl IntoResponse, PostalError> {
     info!("download_attachment: blob_id={blob_id}");
-    let (username, password) =
-        get_credentials(&session).ok_or(PostalError::SessionRequired)?;
+    let (username, password) = get_credentials(&session).ok_or(PostalError::SessionRequired)?;
     let jmap_url = &state.config().custom.jmap_url;
     let client = jmap::create_client(jmap_url, &username, &password).await?;
     let data = jmap::download_blob(&client, &blob_id).await?;

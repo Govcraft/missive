@@ -11,5 +11,19 @@
 </head>
 <body class="bg-gray-100 text-gray-900 h-screen overflow-hidden">
     {% block content %}{% endblock %}
+<script>
+function resizeEmailIframe(iframe) {
+    try {
+        iframe.style.height = iframe.contentDocument.documentElement.scrollHeight + 'px';
+    } catch(e) {
+        iframe.style.height = '600px';
+    }
+}
+document.body.addEventListener('htmx:afterSwap', function() {
+    document.querySelectorAll('iframe[srcdoc]').forEach(function(iframe) {
+        iframe.onload = function() { resizeEmailIframe(this); };
+    });
+});
+</script>
 </body>
 </html>
