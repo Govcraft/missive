@@ -34,6 +34,15 @@ pub struct EmailDetail {
     pub subject: String,
     pub received_at: String,
     pub body_text: String,
+    pub attachments: Vec<AttachmentInfo>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AttachmentInfo {
+    pub blob_id: String,
+    pub name: String,
+    pub size_display: String,
+    pub content_type: String,
 }
 
 pub async fn create_client(
@@ -192,6 +201,7 @@ pub async fn fetch_email_detail(
         email::Property::ReceivedAt,
         email::Property::BodyValues,
         email::Property::TextBody,
+        email::Property::Attachments,
     ]);
     get_request.arguments().fetch_text_body_values(true);
 
@@ -210,6 +220,21 @@ pub async fn fetch_email_detail(
 
     let body_text = extract_text_body(email);
 
+    let attachments = email
+        .attachments()
+        .unwrap_or_default()
+        .iter()
+        .filter_map(|part| {
+            let blob_id = part.blob_id()?.to_string();
+            Some(AttachmentInfo {
+                name: part.name().unwrap_or("attachment").to_string(),
+                size_display: format_file_size(part.size()),
+                content_type: part.content_type().unwrap_or("application/octet-stream").to_string(),
+                blob_id,
+            })
+        })
+        .collect();
+
     Ok(EmailDetail {
         from: format_addresses(email.from()),
         to: format_addresses(email.to()),
@@ -217,7 +242,29 @@ pub async fn fetch_email_detail(
         subject: email.subject().unwrap_or("(no subject)").to_string(),
         received_at: format_timestamp(email.received_at().unwrap_or(0)),
         body_text,
+        attachments,
     })
+}
+
+fn format_file_size(bytes: usize) -> String {
+    if bytes < 1024 {
+        format!("{bytes} B")
+    } else if bytes < 1024 * 1024 {
+        format!("{:.1} KB", bytes as f64 / 1024.0)
+    } else {
+        format!("{:.1} MB", bytes as f64 / (1024.0 * 1024.0))
+    }
+}
+
+pub async fn download_blob(client: &Client, blob_id: &str) -> Result<Vec<u8>, PostalError> {
+    info!("Downloading blob: id={blob_id}");
+    client
+        .download(blob_id)
+        .await
+        .map_err(|e| {
+            error!("JMAP blob download error: {e}");
+            PostalError::Jmap(e.to_string())
+        })
 }
 
 fn format_timestamp(ts: i64) -> String {

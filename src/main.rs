@@ -44,6 +44,7 @@ async fn main() -> Result<()> {
                 .route("/mailboxes", get(routes::mailboxes::list_mailboxes))
                 .route("/emails", get(routes::emails::list_emails))
                 .route("/emails/{id}", get(routes::emails::get_email))
+                .route("/attachments/{blob_id}", get(routes::emails::download_attachment))
                 .layer(session_layer.clone())
         })
         .with_frontend_routes(|router| {

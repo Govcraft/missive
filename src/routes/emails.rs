@@ -2,6 +2,7 @@ use acton_service::prelude::*;
 
 use crate::config::PostalConfig;
 use crate::error::PostalError;
+use axum::body::Body;
 use crate::jmap::{self, EmailDetail, EmailSummary};
 use crate::session::{get_credentials, PostalSession};
 
@@ -64,4 +65,32 @@ pub async fn get_email(
     let email = jmap::fetch_email_detail(&client, &id).await?;
     info!("get_email: returning email subject={}", email.subject);
     Ok(HtmlTemplate::page(EmailDetailTemplate { email }))
+}
+
+#[derive(Deserialize)]
+pub struct DownloadParams {
+    pub name: Option<String>,
+}
+
+pub async fn download_attachment(
+    State(state): State<AppState<PostalConfig>>,
+    session: TypedSession<PostalSession>,
+    Path(blob_id): Path<String>,
+    Query(params): Query<DownloadParams>,
+) -> std::result::Result<impl IntoResponse, PostalError> {
+    info!("download_attachment: blob_id={blob_id}");
+    let (username, password) =
+        get_credentials(&session).ok_or(PostalError::SessionRequired)?;
+    let jmap_url = &state.config().custom.jmap_url;
+    let client = jmap::create_client(jmap_url, &username, &password).await?;
+    let data = jmap::download_blob(&client, &blob_id).await?;
+    let filename = params.name.unwrap_or_else(|| "attachment".to_string());
+    Ok(Response::builder()
+        .header("Content-Type", "application/octet-stream")
+        .header(
+            "Content-Disposition",
+            format!("attachment; filename=\"{filename}\""),
+        )
+        .body(Body::from(data))
+        .unwrap())
 }

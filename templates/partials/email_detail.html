@@ -24,7 +24,26 @@
         </div>
     </div>
 
-    <hr class="border-gray-200 mb-4">
+    {% if !email.attachments.is_empty() %}
+    <div class="mt-4 space-y-2">
+        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Attachments</span>
+        <div class="flex flex-wrap gap-2">
+            {% for att in email.attachments %}
+            <a href="/api/v1/attachments/{{ att.blob_id }}?name={{ att.name }}"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded text-sm text-gray-700 transition-colors"
+               download="{{ att.name }}">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+                {{ att.name }}
+                <span class="text-xs text-gray-400">({{ att.size_display }})</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <hr class="border-gray-200 mb-4 mt-4">
 
     <pre class="whitespace-pre-wrap text-sm text-gray-800 font-sans leading-relaxed">{{ email.body_text }}</pre>
 </div>
