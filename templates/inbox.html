@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Inbox - Postal{% endblock %}
+
+{% block content %}
+<div class="flex h-screen">
+    <!-- Header bar -->
+    <div class="fixed top-0 left-0 right-0 h-12 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-10">
+        <h1 class="text-lg font-semibold text-gray-800">Postal</h1>
+        <div class="flex items-center gap-4">
+            <span class="text-sm text-gray-500">{{ username }}</span>
+            <form action="/logout" method="POST" class="inline">
+                <button type="submit" class="text-sm text-gray-500 hover:text-gray-700">Sign out</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Three-pane layout -->
+    <div class="postal-grid mt-12 w-full">
+        <!-- Mailbox sidebar -->
+        <div id="mailbox-pane" class="border-r border-gray-200 bg-gray-50 overflow-y-auto"
+             hx-get="/api/v1/mailboxes" hx-trigger="load" hx-swap="innerHTML">
+            <div class="p-4 text-sm text-gray-400">Loading mailboxes...</div>
+        </div>
+
+        <!-- Email list pane -->
+        <div id="email-list-pane" class="border-r border-gray-200 bg-white overflow-y-auto">
+            <div class="flex items-center justify-center h-full text-sm text-gray-400">
+                Select a mailbox
+            </div>
+        </div>
+
+        <!-- Email detail pane -->
+        <div id="email-detail-pane" class="bg-white overflow-y-auto">
+            {% include "partials/empty_state.html" %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,5 @@
+[service]
+name = "postal"
+port = 8080
+
+jmap_url = "https://mail.govcraft.ai"

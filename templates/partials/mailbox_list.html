@@ -1,0 +1,19 @@
+<nav class="py-2">
+    {% for mailbox in mailboxes %}
+    <a href="#"
+       hx-get="/api/v1/emails?mailbox_id={{ mailbox.id }}"
+       hx-target="#email-list-pane"
+       hx-swap="innerHTML"
+       class="mailbox-item flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-200 cursor-pointer transition-colors"
+       onclick="document.querySelectorAll('.mailbox-item').forEach(el => el.classList.remove('bg-blue-100', 'text-blue-700')); this.classList.add('bg-blue-100', 'text-blue-700');">
+        <span class="truncate{% if mailbox.role == "inbox" %} font-semibold{% endif %}">
+            {{ mailbox.name }}
+        </span>
+        {% if mailbox.unread_count > 0 %}
+        <span class="ml-2 bg-blue-600 text-white text-xs font-medium px-2 py-0.5 rounded-full">
+            {{ mailbox.unread_count }}
+        </span>
+        {% endif %}
+    </a>
+    {% endfor %}
+</nav>

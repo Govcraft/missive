@@ -1,0 +1,30 @@
+<div class="p-6">
+    <div class="mb-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ email.subject }}</h2>
+
+        <div class="space-y-1 text-sm text-gray-600">
+            <div>
+                <span class="font-medium text-gray-500 w-12 inline-block">From:</span>
+                <span class="text-gray-900">{{ email.from }}</span>
+            </div>
+            <div>
+                <span class="font-medium text-gray-500 w-12 inline-block">To:</span>
+                <span>{{ email.to }}</span>
+            </div>
+            {% if !email.cc.is_empty() %}
+            <div>
+                <span class="font-medium text-gray-500 w-12 inline-block">Cc:</span>
+                <span>{{ email.cc }}</span>
+            </div>
+            {% endif %}
+            <div>
+                <span class="font-medium text-gray-500 w-12 inline-block">Date:</span>
+                <span>{{ email.received_at }}</span>
+            </div>
+        </div>
+    </div>
+
+    <hr class="border-gray-200 mb-4">
+
+    <pre class="whitespace-pre-wrap text-sm text-gray-800 font-sans leading-relaxed">{{ email.body_text }}</pre>
+</div>
