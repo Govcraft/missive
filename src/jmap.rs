@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use acton_service::prelude::{error, info};
 use jmap_client::{
     client::Client,
@@ -213,13 +215,17 @@ pub async fn fetch_email_detail(
         .ok_or_else(|| PostalError::Jmap("Email not found".to_string()))?;
 
     let body_text = extract_text_body(email);
-    let body_html = extract_html_body(email);
+    let cid_map = build_cid_map(email);
+    let body_html = extract_html_body(email, &cid_map);
 
     let attachments = email
         .attachments()
         .unwrap_or_default()
         .iter()
         .filter_map(|part| {
+            if part.content_id().is_some() {
+                return None;
+            }
             let blob_id = part.blob_id()?.to_string();
             Some(AttachmentInfo {
                 name: part.name().unwrap_or("attachment").to_string(),
@@ -277,7 +283,21 @@ fn format_timestamp(ts: i64) -> String {
     }
 }
 
-fn extract_html_body(email: &Email) -> Option<String> {
+fn build_cid_map(email: &Email) -> HashMap<String, String> {
+    let mut cid_map = HashMap::new();
+    if let Some(attachments) = email.attachments() {
+        for part in attachments {
+            if let Some(cid) = part.content_id()
+                && let Some(blob_id) = part.blob_id()
+            {
+                cid_map.insert(cid.to_string(), blob_id.to_string());
+            }
+        }
+    }
+    cid_map
+}
+
+fn extract_html_body(email: &Email, cid_map: &HashMap<String, String>) -> Option<String> {
     if let Some(html_parts) = email.html_body() {
         for part in html_parts {
             if let Some(part_id) = part.part_id()
@@ -285,7 +305,7 @@ fn extract_html_body(email: &Email) -> Option<String> {
             {
                 let raw_html = body_value.value();
                 if !raw_html.is_empty() {
-                    return Some(sanitize_email_html(raw_html));
+                    return Some(sanitize_email_html(raw_html, cid_map));
                 }
             }
         }
