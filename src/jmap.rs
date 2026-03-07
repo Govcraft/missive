@@ -14,6 +14,47 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::MissiveError;
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct JmapUrl(String);
+
+impl JmapUrl {
+    pub fn host(&self) -> &str {
+        self.0
+            .split("://")
+            .nth(1)
+            .unwrap_or(&self.0)
+            .split('/')
+            .next()
+            .unwrap_or(&self.0)
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
+impl std::fmt::Display for JmapUrl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl From<String> for JmapUrl {
+    fn from(s: String) -> Self {
+        Self(s)
+    }
+}
+
+impl From<&str> for JmapUrl {
+    fn from(s: &str) -> Self {
+        Self(s.to_string())
+    }
+}
+
 macro_rules! define_id {
     ($name:ident) => {
         #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -57,7 +98,7 @@ pub fn new_client_cache() -> JmapClientCache {
 
 pub async fn get_or_create_client(
     cache: &JmapClientCache,
-    jmap_url: &str,
+    jmap_url: &JmapUrl,
     username: &str,
     password: &str,
 ) -> Result<Arc<Client>, MissiveError> {
@@ -110,24 +151,18 @@ pub struct AttachmentInfo {
 }
 
 pub async fn create_client(
-    jmap_url: &str,
+    jmap_url: &JmapUrl,
     username: &str,
     password: &str,
 ) -> Result<Client, MissiveError> {
-    let host = jmap_url
-        .split("://")
-        .nth(1)
-        .unwrap_or(jmap_url)
-        .split('/')
-        .next()
-        .unwrap_or(jmap_url);
+    let host = jmap_url.host();
 
     info!("Creating JMAP client: url={jmap_url}, host={host}, user={username}");
 
     let client = Client::new()
         .credentials((username, password))
         .follow_redirects([host])
-        .connect(jmap_url)
+        .connect(jmap_url.as_str())
         .await
         .map_err(|e| {
             let msg = e.to_string();
@@ -604,6 +639,38 @@ mod tests {
         assert_eq!(json, "\"test-id\"");
         let deserialized: MailboxId = serde_json::from_str(&json).unwrap();
         assert_eq!(deserialized, id);
+    }
+
+    // --- JmapUrl tests ---
+
+    #[test]
+    fn jmap_url_host_with_scheme() {
+        let url = JmapUrl::from("https://mail.example.com/jmap");
+        assert_eq!(url.host(), "mail.example.com");
+    }
+
+    #[test]
+    fn jmap_url_host_without_scheme() {
+        let url = JmapUrl::from("mail.example.com");
+        assert_eq!(url.host(), "mail.example.com");
+    }
+
+    #[test]
+    fn jmap_url_host_with_port() {
+        let url = JmapUrl::from("https://mail.example.com:443/jmap");
+        assert_eq!(url.host(), "mail.example.com:443");
+    }
+
+    #[test]
+    fn jmap_url_display() {
+        let url = JmapUrl::from("https://mail.example.com");
+        assert_eq!(format!("{url}"), "https://mail.example.com");
+    }
+
+    #[test]
+    fn jmap_url_is_empty() {
+        assert!(JmapUrl::default().is_empty());
+        assert!(!JmapUrl::from("https://example.com").is_empty());
     }
 
     // --- role_sort_priority tests ---

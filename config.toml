@@ -1,5 +1,5 @@
+jmap_url = "https://mail.govcraft.ai"
+
 [service]
 name = "missive"
 port = 8080
-
-jmap_url = "https://mail.govcraft.ai"

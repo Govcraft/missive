@@ -46,9 +46,7 @@ impl IntoResponse for MissiveError {
             MissiveError::SessionRequired => {
                 return Redirect::to("/login").into_response();
             }
-            MissiveError::HttpResponse(e) => {
-                (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
-            }
+            MissiveError::HttpResponse(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
         };
         (
             status,

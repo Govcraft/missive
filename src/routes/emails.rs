@@ -1,6 +1,7 @@
 use acton_service::prelude::*;
 use axum::body::Body;
 
+use crate::config::MissiveConfig;
 use crate::error::MissiveError;
 use crate::jmap::{self, BlobId, EmailDetail, EmailId, EmailSummary, MailboxId};
 use crate::session::AuthenticatedClient;
@@ -27,11 +28,12 @@ struct EmailDetailTemplate {
 }
 
 pub async fn list_emails(
+    State(state): State<AppState<MissiveConfig>>,
     AuthenticatedClient(client): AuthenticatedClient,
     Query(params): Query<EmailListParams>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
     info!("list_emails: mailbox_id={}", params.mailbox_id);
-    let page_size = 50;
+    let page_size = state.config().custom.page_size;
     let emails =
         jmap::fetch_emails(&client, &params.mailbox_id, params.position, page_size).await?;
     info!(

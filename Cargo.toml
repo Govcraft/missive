@@ -13,6 +13,7 @@ dashmap = "6.1.0"
 jmap-client = "0.4.0"
 secrecy = { version = "0.10.3", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
+toml = "1.0.6"
 tower-http = { version = "0.6.8", features = ["fs"] }
 
 [dev-dependencies]

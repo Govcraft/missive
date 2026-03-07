@@ -6,7 +6,7 @@ use acton_service::session::{SessionConfig, create_memory_session_layer};
 use axum::Extension;
 use tower_http::services::ServeDir;
 
-use crate::jmap::new_client_cache;
+use crate::jmap::{JmapUrl, new_client_cache};
 
 mod config;
 mod error;
@@ -30,17 +30,23 @@ async fn main() -> Result<()> {
     );
 
     if config.custom.jmap_url.is_empty() {
-        // Fallback: try loading jmap_url directly from config.toml
-        // since #[serde(flatten)] may not work with figment
-        if let Ok(raw) = std::fs::read_to_string("config.toml") {
-            for line in raw.lines() {
-                if let Some(val) = line.strip_prefix("jmap_url")
-                    && let Some(val) = val.trim().strip_prefix('=')
-                {
-                    let val = val.trim().trim_matches('"');
-                    config.custom.jmap_url = val.to_string();
-                    info!("Loaded jmap_url from config.toml: {val}");
-                }
+        // Fallback: figment doesn't properly deserialize #[serde(flatten)] fields.
+        // Also check inside [service] table in case jmap_url was placed there.
+        if let Ok(raw) = std::fs::read_to_string("config.toml")
+            && let Ok(table) = raw.parse::<toml::Table>()
+        {
+            let url = table
+                .get("jmap_url")
+                .or_else(|| {
+                    table
+                        .get("service")
+                        .and_then(|v| v.as_table())
+                        .and_then(|t| t.get("jmap_url"))
+                })
+                .and_then(|v| v.as_str());
+            if let Some(url) = url {
+                config.custom.jmap_url = JmapUrl::from(url);
+                info!("Loaded jmap_url from config.toml: {url}");
             }
         }
     }

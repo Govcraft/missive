@@ -55,24 +55,23 @@ impl FromRequestParts<AppState<MissiveConfig>> for AuthenticatedClient {
         parts: &mut axum::http::request::Parts,
         state: &AppState<MissiveConfig>,
     ) -> std::result::Result<Self, Self::Rejection> {
-        let session =
-            TypedSession::<MissiveSession>::from_request_parts(parts, state)
-                .await
-                .map_err(|_| MissiveError::SessionRequired)?;
+        let session = TypedSession::<MissiveSession>::from_request_parts(parts, state)
+            .await
+            .map_err(|_| MissiveError::SessionRequired)?;
 
-        let Extension(cache) =
-            Extension::<JmapClientCache>::from_request_parts(parts, state)
-                .await
-                .map_err(|_| {
-                    MissiveError::Jmap("Client cache not available".to_string())
-                })?;
+        let Extension(cache) = Extension::<JmapClientCache>::from_request_parts(parts, state)
+            .await
+            .map_err(|_| MissiveError::Jmap("Client cache not available".to_string()))?;
 
         let (username, password) =
             get_credentials(&session).ok_or(MissiveError::SessionRequired)?;
-        let jmap_url = &state.config().custom.jmap_url;
-        let client =
-            jmap::get_or_create_client(&cache, jmap_url, &username, password.expose_secret())
-                .await?;
+        let client = jmap::get_or_create_client(
+            &cache,
+            &state.config().custom.jmap_url,
+            &username,
+            password.expose_secret(),
+        )
+        .await?;
 
         Ok(AuthenticatedClient(client))
     }
