@@ -5,34 +5,38 @@
 </div>
 {% endif %}
 {% else %}
+<ul role="list" class="divide-y divide-gray-200">
 {% for email in emails %}
-<a href="#"
-   hx-get="/api/v1/emails/{{ email.id }}"
-   hx-target="#email-detail-pane"
-   hx-swap="innerHTML"
-   class="email-row block px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100{% if email.is_unread %} bg-white{% else %} bg-gray-50{% endif %}"
-   onclick="document.querySelectorAll('.email-row').forEach(el => el.classList.remove('bg-blue-100')); this.classList.add('bg-blue-100');">
-    <div class="flex items-baseline justify-between mb-1">
-        <span class="text-sm truncate max-w-[200px]{% if email.is_unread %} font-semibold text-gray-900{% else %} text-gray-600{% endif %}">
-            {{ email.from }}
-        </span>
-        <span class="flex items-center gap-1 ml-2 whitespace-nowrap">
-            {% if email.has_attachment %}
-            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-            </svg>
-            {% endif %}
-            <span class="text-xs text-gray-400">{{ email.received_at }}</span>
-        </span>
-    </div>
-    <div class="text-sm truncate{% if email.is_unread %} font-medium text-gray-800{% else %} text-gray-600{% endif %}">
-        {{ email.subject }}
-    </div>
-    <div class="text-xs text-gray-400 truncate mt-0.5">
-        {{ email.preview }}
-    </div>
-</a>
+    <li>
+        <a href="#"
+           hx-get="/api/v1/emails/{{ email.id }}"
+           hx-target="#email-detail-pane"
+           hx-swap="innerHTML"
+           class="email-row block px-4 py-4 hover:bg-blue-50 cursor-pointer transition-colors sm:px-6{% if email.is_unread %} bg-white{% else %} bg-gray-50/50{% endif %}"
+           onclick="document.querySelectorAll('.email-row').forEach(el => el.classList.remove('bg-blue-100')); this.classList.add('bg-blue-100');">
+            <div class="flex items-baseline justify-between mb-1">
+                <span class="text-sm truncate max-w-[200px]{% if email.is_unread %} font-semibold text-gray-900{% else %} text-gray-600{% endif %}">
+                    {{ email.from }}
+                </span>
+                <span class="flex items-center gap-1 ml-2 whitespace-nowrap">
+                    {% if email.has_attachment %}
+                    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                    {% endif %}
+                    <span class="text-xs text-gray-400">{{ email.received_at }}</span>
+                </span>
+            </div>
+            <div class="text-sm truncate{% if email.is_unread %} font-medium text-gray-800{% else %} text-gray-600{% endif %}">
+                {{ email.subject }}
+            </div>
+            <div class="text-xs text-gray-400 truncate mt-0.5">
+                {{ email.preview }}
+            </div>
+        </a>
+    </li>
 {% endfor %}
+</ul>
 {% match next_position %}
 {% when Some with (pos) %}
 <div hx-get="/api/v1/emails?mailbox_id={{ mailbox_id }}&amp;position={{ pos }}"

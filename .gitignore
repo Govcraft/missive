@@ -7,5 +7,11 @@
 *.md
 !README.md
 
+# Node
+node_modules/
+
+# Tailwind build output
+static/css/app.css
+
 # Rust
 target/

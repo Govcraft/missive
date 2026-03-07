@@ -1,61 +1,53 @@
-<div class="p-6">
-    <div class="mb-6">
-        <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ email.subject }}</h2>
-
+<div class="overflow-hidden bg-white">
+    <div class="px-4 py-5 sm:px-6">
+        <h2 class="text-lg/7 font-semibold text-gray-900">{{ email.subject }}</h2>
+    </div>
+    <div class="border-t border-gray-200 px-4 py-3 sm:px-6">
         <div class="space-y-1 text-sm text-gray-600">
-            <div>
-                <span class="font-medium text-gray-500 w-12 inline-block">From:</span>
-                <span class="text-gray-900">{{ email.from }}</span>
-            </div>
-            <div>
-                <span class="font-medium text-gray-500 w-12 inline-block">To:</span>
-                <span>{{ email.to }}</span>
-            </div>
+            <div><span class="font-medium text-gray-500 inline-block w-12">From</span> <span class="text-gray-900">{{ email.from }}</span></div>
+            <div><span class="font-medium text-gray-500 inline-block w-12">To</span> <span>{{ email.to }}</span></div>
             {% if !email.cc.is_empty() %}
-            <div>
-                <span class="font-medium text-gray-500 w-12 inline-block">Cc:</span>
-                <span>{{ email.cc }}</span>
-            </div>
+            <div><span class="font-medium text-gray-500 inline-block w-12">Cc</span> <span>{{ email.cc }}</span></div>
             {% endif %}
-            <div>
-                <span class="font-medium text-gray-500 w-12 inline-block">Date:</span>
-                <span>{{ email.received_at }}</span>
-            </div>
+            <div><span class="font-medium text-gray-500 inline-block w-12">Date</span> <span>{{ email.received_at }}</span></div>
         </div>
-    </div>
 
-    {% if !email.attachments.is_empty() %}
-    <div class="mt-4 space-y-2">
-        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Attachments</span>
-        <div class="flex flex-wrap gap-2">
+        {% if !email.attachments.is_empty() %}
+        <ul role="list" class="mt-4 divide-y divide-gray-200 rounded-md border border-gray-200">
             {% for att in email.attachments %}
-            <a href="/api/v1/attachments/{{ att.blob_id }}?name={{ att.name }}"
-               class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded text-sm text-gray-700 transition-colors"
-               download="{{ att.name }}">
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                </svg>
-                {{ att.name }}
-                <span class="text-xs text-gray-400">({{ att.size_display }})</span>
-            </a>
+            <li class="flex items-center justify-between py-3 pl-3 pr-4 text-sm sm:py-4 sm:pl-4 sm:pr-5">
+                <div class="flex w-0 flex-1 items-center">
+                    <svg class="size-5 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
+                    </svg>
+                    <div class="ml-3 flex min-w-0 flex-1 gap-2">
+                        <span class="truncate font-medium">{{ att.name }}</span>
+                        <span class="shrink-0 text-gray-400">{{ att.size_display }}</span>
+                    </div>
+                </div>
+                <div class="ml-4 shrink-0">
+                    <a href="/api/v1/attachments/{{ att.blob_id }}?name={{ att.name }}"
+                       download="{{ att.name }}"
+                       class="font-medium text-slate-600 hover:text-slate-500">Download</a>
+                </div>
+            </li>
             {% endfor %}
-        </div>
+        </ul>
+        {% endif %}
     </div>
-    {% endif %}
-
-    <hr class="border-gray-200 mb-4 mt-4">
-
-    {% match email.body_html %}
-    {% when Some with (html) %}
-    <iframe
-        sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-        srcdoc="{{ html }}"
-        class="w-full border-0"
-        style="min-height: 200px;"
-        referrerpolicy="no-referrer"
-        title="Email content">
-    </iframe>
-    {% when None %}
-    <pre class="whitespace-pre-wrap text-sm text-gray-800 font-sans leading-relaxed">{{ email.body_text }}</pre>
-    {% endmatch %}
+    <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
+        {% match email.body_html %}
+        {% when Some with (html) %}
+        <iframe
+            sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+            srcdoc="{{ html }}"
+            class="w-full border-0"
+            style="min-height: 200px;"
+            referrerpolicy="no-referrer"
+            title="Email content">
+        </iframe>
+        {% when None %}
+        <pre class="whitespace-pre-wrap text-sm text-gray-800 font-sans leading-relaxed">{{ email.body_text }}</pre>
+        {% endmatch %}
+    </div>
 </div>
