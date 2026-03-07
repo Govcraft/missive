@@ -31,7 +31,7 @@
 {% match next_position %}
 {% when Some with (pos) %}
 <div hx-get="/api/v1/emails?mailbox_id={{ mailbox_id }}&amp;position={{ pos }}"
-     hx-trigger="revealed"
+     hx-trigger="intersect once root:#email-list-pane threshold:0.1"
      hx-swap="outerHTML"
      class="flex items-center justify-center py-4 text-sm text-gray-400">
     Loading more...
