@@ -8,7 +8,7 @@ use acton_service::session::Session;
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::config::MissiveConfig;
-use crate::error::MissiveError;
+use crate::error::{JmapErrorKind, MissiveError};
 use crate::jmap::{self, JmapClientCache};
 
 #[derive(Default, Serialize, Deserialize)]
@@ -62,7 +62,11 @@ impl FromRequestParts<AppState<MissiveConfig>> for AuthenticatedClient {
 
         let Extension(cache) = Extension::<JmapClientCache>::from_request_parts(parts, state)
             .await
-            .map_err(|_| MissiveError::Jmap("Client cache not available".to_string()))?;
+            .map_err(|_| {
+                MissiveError::Jmap(JmapErrorKind::Unknown {
+                    message: "Client cache not available".to_string(),
+                })
+            })?;
 
         let (username, password) =
             get_credentials(&session).ok_or(MissiveError::SessionRequired)?;

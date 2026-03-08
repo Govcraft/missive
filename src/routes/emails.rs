@@ -1,5 +1,7 @@
+use std::sync::Arc;
+
 use acton_service::prelude::*;
-use acton_service::session::{FlashMessage, FlashMessages};
+use acton_service::session::{FlashMessage, FlashMessages, Session};
 use axum::body::Body;
 
 use crate::config::MissiveConfig;
@@ -33,6 +35,7 @@ struct EmailDetailTemplate {
 struct ComposeFormTemplate {
     identities: Vec<IdentityInfo>,
     form: ComposeFormData,
+    title: String,
 }
 
 #[derive(Template)]
@@ -57,6 +60,10 @@ pub struct ComposeFormData {
     pub subject: String,
     #[serde(default)]
     pub body: String,
+    #[serde(default)]
+    pub in_reply_to: String,
+    #[serde(default)]
+    pub references_header: String,
 }
 
 pub async fn list_emails(
@@ -117,6 +124,38 @@ pub async fn download_attachment(
         .body(Body::from(data))?)
 }
 
+async fn push_flash(session: &Session, message: FlashMessage) {
+    let description = format!("{:?}: {}", message.kind, message.message);
+    match FlashMessages::push(session, message).await {
+        Ok(()) => info!("flash message pushed: {description}"),
+        Err(e) => error!("failed to push flash message ({description}): {e}"),
+    }
+}
+
+fn empty_state_with_flash() -> Response {
+    HtmlTemplate::page(EmptyStateTemplate)
+        .with_hx_trigger("flashUpdated")
+        .into_response()
+}
+
+async fn flash_on_result(
+    session: &Session,
+    success_msg: &str,
+    result: std::result::Result<(), MissiveError>,
+) -> std::result::Result<Response, MissiveError> {
+    match result {
+        Ok(()) => {
+            push_flash(session, FlashMessage::success(success_msg)).await;
+            Ok(empty_state_with_flash())
+        }
+        Err(e) => {
+            error!("operation failed: {e}");
+            push_flash(session, FlashMessage::error(e.to_string())).await;
+            Err(e)
+        }
+    }
+}
+
 fn filter_identities_for_user(
     identities: Vec<IdentityInfo>,
     username: &str,
@@ -137,19 +176,17 @@ pub async fn compose_form(
     let all_identities = jmap::fetch_identities(&client).await?;
     let identities = filter_identities_for_user(all_identities, &username);
     if identities.is_empty() {
-        FlashMessages::push(
+        push_flash(
             &session,
             FlashMessage::error("No sending identities configured for your account"),
         )
-        .await
-        .ok();
-        return Ok(HtmlTemplate::page(EmptyStateTemplate)
-            .with_hx_trigger("flashUpdated")
-            .into_response());
+        .await;
+        return Ok(empty_state_with_flash());
     }
     Ok(HtmlTemplate::page(ComposeFormTemplate {
         identities,
         form: ComposeFormData::default(),
+        title: "New Message".to_string(),
     })
     .into_response())
 }
@@ -168,40 +205,40 @@ pub async fn send_email(
     let from_email = match identity {
         Some(i) => i.email.clone(),
         None => {
-            FlashMessages::push(&session, FlashMessage::error("Invalid sending identity"))
-                .await
-                .ok();
-            return Ok(HtmlTemplate::page(ComposeFormTemplate { identities, form })
+            push_flash(&session, FlashMessage::error("Invalid sending identity")).await;
+            return Ok(HtmlTemplate::page(ComposeFormTemplate { identities, form, title: "New Message".to_string() })
                 .with_hx_trigger("flashUpdated")
                 .into_response());
         }
     };
 
+    let threading = jmap::ThreadingHeaders {
+        in_reply_to: Some(form.in_reply_to.as_str()).filter(|s| !s.is_empty()),
+        references: Some(form.references_header.as_str()).filter(|s| !s.is_empty()),
+    };
+    let content = jmap::EmailContent {
+        from_email: &from_email,
+        to: &form.to,
+        cc: &form.cc,
+        subject: &form.subject,
+        body_text: &form.body,
+        threading: &threading,
+    };
     match jmap::send_email(
         &client,
         &IdentityId::from(form.identity_id.as_str()),
-        &from_email,
-        &form.to,
-        &form.cc,
-        &form.subject,
-        &form.body,
+        &content,
     )
     .await
     {
         Ok(()) => {
-            FlashMessages::push(&session, FlashMessage::success("Message sent"))
-                .await
-                .ok();
-            Ok(HtmlTemplate::page(EmptyStateTemplate)
-                .with_hx_trigger("flashUpdated")
-                .into_response())
+            push_flash(&session, FlashMessage::success("Message sent")).await;
+            Ok(empty_state_with_flash())
         }
         Err(e) => {
             error!("send_email failed: {e}");
-            FlashMessages::push(&session, FlashMessage::error(e.to_string()))
-                .await
-                .ok();
-            Ok(HtmlTemplate::page(ComposeFormTemplate { identities, form })
+            push_flash(&session, FlashMessage::error(e.to_string())).await;
+            Ok(HtmlTemplate::page(ComposeFormTemplate { identities, form, title: "New Message".to_string() })
                 .with_hx_trigger("flashUpdated")
                 .into_response())
         }
@@ -221,37 +258,354 @@ pub async fn save_draft(
         .map(|i| i.email.as_str())
         .unwrap_or(&username);
 
-    match jmap::save_draft(&client, from_email, &form.to, &form.cc, &form.subject, &form.body)
-        .await
-    {
+    let threading = jmap::ThreadingHeaders {
+        in_reply_to: Some(form.in_reply_to.as_str()).filter(|s| !s.is_empty()),
+        references: Some(form.references_header.as_str()).filter(|s| !s.is_empty()),
+    };
+    let content = jmap::EmailContent {
+        from_email,
+        to: &form.to,
+        cc: &form.cc,
+        subject: &form.subject,
+        body_text: &form.body,
+        threading: &threading,
+    };
+    match jmap::save_draft(&client, &content).await {
         Ok(()) => {
-            FlashMessages::push(&session, FlashMessage::success("Draft saved"))
-                .await
-                .ok();
-            Ok(HtmlTemplate::page(EmptyStateTemplate)
-                .with_hx_trigger("flashUpdated")
-                .into_response())
+            push_flash(&session, FlashMessage::success("Draft saved")).await;
+            Ok(empty_state_with_flash())
         }
         Err(e) => {
             error!("save_draft failed: {e}");
-            FlashMessages::push(&session, FlashMessage::error(e.to_string()))
-                .await
-                .ok();
-            Ok(HtmlTemplate::page(ComposeFormTemplate { identities, form })
+            push_flash(&session, FlashMessage::error(e.to_string())).await;
+            Ok(HtmlTemplate::page(ComposeFormTemplate { identities, form, title: "New Message".to_string() })
                 .with_hx_trigger("flashUpdated")
                 .into_response())
         }
     }
 }
 
+pub async fn delete_email(
+    AuthenticatedClient(client, _, session): AuthenticatedClient,
+    Path(id): Path<EmailId>,
+) -> std::result::Result<impl IntoResponse, MissiveError> {
+    info!("delete_email: id={id}");
+    let result = jmap::delete_email(&client, &id).await;
+    flash_on_result(&session, "Email deleted", result).await
+}
+
+fn prepend_subject_prefix(subject: &str, prefix: &str) -> String {
+    let trimmed = subject.trim();
+    let check = format!("{prefix}:");
+    if trimmed.len() >= check.len()
+        && trimmed[..check.len()].eq_ignore_ascii_case(&check)
+    {
+        trimmed.to_string()
+    } else {
+        format!("{prefix}: {trimmed}")
+    }
+}
+
+fn quote_body(body: &str) -> String {
+    body.lines().map(|line| format!("> {line}")).collect::<Vec<_>>().join("\n")
+}
+
+fn build_reply_references(original_refs: &[String], original_msg_id: &[String]) -> String {
+    let mut seen = std::collections::HashSet::new();
+    let mut ids = Vec::new();
+    for id in original_refs.iter().chain(original_msg_id.iter()) {
+        if seen.insert(id) {
+            ids.push(id.as_str());
+        }
+    }
+    ids.join(" ")
+}
+
+fn remove_address(addresses: &str, to_remove: &str) -> String {
+    addresses
+        .split(',')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty() && !s.eq_ignore_ascii_case(to_remove))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn format_forwarded_body(email: &EmailDetail) -> String {
+    format!(
+        "\n\n---------- Forwarded message ----------\nFrom: {}\nDate: {}\nSubject: {}\nTo: {}\n\n{}",
+        email.from, email.received_at, email.subject, email.to, email.body_text
+    )
+}
+
 pub async fn compose_cancel() -> std::result::Result<impl IntoResponse, MissiveError> {
     Ok(HtmlTemplate::page(EmptyStateTemplate))
+}
+
+enum ComposeMode {
+    Reply,
+    ReplyAll,
+    Forward,
+}
+
+async fn compose_for_email(
+    client: &Arc<jmap_client::client::Client>,
+    username: &str,
+    session: &Session,
+    email_id: &EmailId,
+    mode: ComposeMode,
+) -> std::result::Result<Response, MissiveError> {
+    let email = jmap::fetch_email_detail(client, email_id).await?;
+    let all_identities = jmap::fetch_identities(client).await?;
+    let identities = filter_identities_for_user(all_identities, username);
+    if identities.is_empty() {
+        push_flash(
+            session,
+            FlashMessage::error("No sending identities configured for your account"),
+        )
+        .await;
+        return Ok(empty_state_with_flash());
+    }
+
+    let (title, form) = match mode {
+        ComposeMode::Reply => {
+            let in_reply_to = email.message_id.first().cloned().unwrap_or_default();
+            let references_header =
+                build_reply_references(&email.references, &email.message_id);
+            let quoted = format!(
+                "\n\nOn {}, {} wrote:\n{}",
+                email.received_at,
+                email.from,
+                quote_body(&email.body_text)
+            );
+            (
+                "Reply".to_string(),
+                ComposeFormData {
+                    to: email.from_email.clone(),
+                    subject: prepend_subject_prefix(&email.subject, "Re"),
+                    body: quoted,
+                    in_reply_to,
+                    references_header,
+                    ..Default::default()
+                },
+            )
+        }
+        ComposeMode::ReplyAll => {
+            let in_reply_to = email.message_id.first().cloned().unwrap_or_default();
+            let references_header =
+                build_reply_references(&email.references, &email.message_id);
+            let quoted = format!(
+                "\n\nOn {}, {} wrote:\n{}",
+                email.received_at,
+                email.from,
+                quote_body(&email.body_text)
+            );
+            let all_recipients = if email.cc_emails.is_empty() {
+                email.to_emails.clone()
+            } else {
+                format!("{}, {}", email.to_emails, email.cc_emails)
+            };
+            let cc = remove_address(&all_recipients, username);
+            (
+                "Reply All".to_string(),
+                ComposeFormData {
+                    to: email.from_email.clone(),
+                    cc,
+                    subject: prepend_subject_prefix(&email.subject, "Re"),
+                    body: quoted,
+                    in_reply_to,
+                    references_header,
+                    ..Default::default()
+                },
+            )
+        }
+        ComposeMode::Forward => (
+            "Forward".to_string(),
+            ComposeFormData {
+                subject: prepend_subject_prefix(&email.subject, "Fwd"),
+                body: format_forwarded_body(&email),
+                ..Default::default()
+            },
+        ),
+    };
+
+    Ok(HtmlTemplate::page(ComposeFormTemplate {
+        identities,
+        form,
+        title,
+    })
+    .into_response())
+}
+
+pub async fn reply(
+    AuthenticatedClient(client, username, session): AuthenticatedClient,
+    Path(id): Path<EmailId>,
+) -> std::result::Result<impl IntoResponse, MissiveError> {
+    info!("reply: id={id}");
+    compose_for_email(&client, &username, &session, &id, ComposeMode::Reply).await
+}
+
+pub async fn reply_all(
+    AuthenticatedClient(client, username, session): AuthenticatedClient,
+    Path(id): Path<EmailId>,
+) -> std::result::Result<impl IntoResponse, MissiveError> {
+    info!("reply_all: id={id}");
+    compose_for_email(&client, &username, &session, &id, ComposeMode::ReplyAll).await
+}
+
+pub async fn forward(
+    AuthenticatedClient(client, username, session): AuthenticatedClient,
+    Path(id): Path<EmailId>,
+) -> std::result::Result<impl IntoResponse, MissiveError> {
+    info!("forward: id={id}");
+    compose_for_email(&client, &username, &session, &id, ComposeMode::Forward).await
 }
 
 pub async fn get_flash(
     flash: FlashMessages,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    Ok(HtmlTemplate::page(FlashToastTemplate {
-        messages: flash.into_messages(),
-    }))
+    let messages = flash.into_messages();
+    info!("get_flash: returning {} flash messages", messages.len());
+    for msg in &messages {
+        info!("get_flash: {:?} - {}", msg.kind, msg.message);
+    }
+    Ok(HtmlTemplate::page(FlashToastTemplate { messages }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::jmap::{EmailDetail, EmailId};
+
+    fn make_email_detail() -> EmailDetail {
+        EmailDetail {
+            id: EmailId::from("test-id"),
+            from: "Alice <alice@example.com>".to_string(),
+            to: "Bob <bob@example.com>".to_string(),
+            cc: String::new(),
+            subject: "Hello World".to_string(),
+            received_at: "Jan 1, 2025".to_string(),
+            body_text: "Line one\nLine two".to_string(),
+            body_html: None,
+            attachments: Vec::new(),
+            message_id: vec!["<msg-1@example.com>".to_string()],
+            references: Vec::new(),
+            from_email: "alice@example.com".to_string(),
+            to_emails: "bob@example.com".to_string(),
+            cc_emails: String::new(),
+        }
+    }
+
+    // --- prepend_subject_prefix ---
+
+    #[test]
+    fn prepend_re_when_missing() {
+        assert_eq!(prepend_subject_prefix("Hello", "Re"), "Re: Hello");
+    }
+
+    #[test]
+    fn no_duplicate_re_prefix() {
+        assert_eq!(prepend_subject_prefix("Re: Hello", "Re"), "Re: Hello");
+    }
+
+    #[test]
+    fn no_duplicate_re_case_insensitive() {
+        assert_eq!(prepend_subject_prefix("re: Hello", "Re"), "re: Hello");
+    }
+
+    #[test]
+    fn prepend_fwd_when_missing() {
+        assert_eq!(prepend_subject_prefix("Hello", "Fwd"), "Fwd: Hello");
+    }
+
+    #[test]
+    fn no_duplicate_fwd_prefix() {
+        assert_eq!(prepend_subject_prefix("Fwd: Hello", "Fwd"), "Fwd: Hello");
+    }
+
+    #[test]
+    fn prepend_trims_whitespace() {
+        assert_eq!(prepend_subject_prefix("  Hello  ", "Re"), "Re: Hello");
+    }
+
+    // --- quote_body ---
+
+    #[test]
+    fn quote_body_prefixes_lines() {
+        assert_eq!(quote_body("a\nb"), "> a\n> b");
+    }
+
+    #[test]
+    fn quote_body_empty() {
+        assert_eq!(quote_body(""), "");
+    }
+
+    // --- build_reply_references ---
+
+    #[test]
+    fn build_refs_concatenates() {
+        let refs = vec!["<a>".to_string()];
+        let msg_id = vec!["<b>".to_string()];
+        assert_eq!(build_reply_references(&refs, &msg_id), "<a> <b>");
+    }
+
+    #[test]
+    fn build_refs_deduplicates() {
+        let refs = vec!["<a>".to_string(), "<b>".to_string()];
+        let msg_id = vec!["<b>".to_string()];
+        assert_eq!(build_reply_references(&refs, &msg_id), "<a> <b>");
+    }
+
+    #[test]
+    fn build_refs_empty() {
+        let empty: Vec<String> = Vec::new();
+        assert_eq!(build_reply_references(&empty, &empty), "");
+    }
+
+    // --- remove_address ---
+
+    #[test]
+    fn remove_address_filters_match() {
+        assert_eq!(
+            remove_address("alice@example.com, bob@example.com", "alice@example.com"),
+            "bob@example.com"
+        );
+    }
+
+    #[test]
+    fn remove_address_case_insensitive() {
+        assert_eq!(
+            remove_address("Alice@Example.com, bob@example.com", "alice@example.com"),
+            "bob@example.com"
+        );
+    }
+
+    #[test]
+    fn remove_address_no_match() {
+        assert_eq!(
+            remove_address("bob@example.com", "alice@example.com"),
+            "bob@example.com"
+        );
+    }
+
+    #[test]
+    fn remove_address_empty_result() {
+        assert_eq!(
+            remove_address("alice@example.com", "alice@example.com"),
+            ""
+        );
+    }
+
+    // --- format_forwarded_body ---
+
+    #[test]
+    fn format_forwarded_body_structure() {
+        let email = make_email_detail();
+        let result = format_forwarded_body(&email);
+        assert!(result.contains("---------- Forwarded message ----------"));
+        assert!(result.contains("From: Alice <alice@example.com>"));
+        assert!(result.contains("Date: Jan 1, 2025"));
+        assert!(result.contains("Subject: Hello World"));
+        assert!(result.contains("To: Bob <bob@example.com>"));
+        assert!(result.contains("Line one\nLine two"));
+    }
 }

@@ -1,11 +1,13 @@
 <div class="overflow-hidden bg-white">
     <div class="px-4 py-5 sm:px-6">
-        <h2 class="text-lg/7 font-semibold text-gray-900">New Message</h2>
+        <h2 class="text-lg/7 font-semibold text-gray-900">{{ title }}</h2>
     </div>
     <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
         <form id="compose-form" hx-target="#email-detail-pane" hx-swap="innerHTML" class="space-y-4">
             {% if let Some(identity) = identities.first() %}
             <input type="hidden" name="identity_id" value="{{ identity.id }}" />
+            <input type="hidden" name="in_reply_to" value="{{ form.in_reply_to }}" />
+            <input type="hidden" name="references_header" value="{{ form.references_header }}" />
             <div>
                 <label class="block text-sm/6 font-medium text-gray-900">From</label>
                 <div class="mt-2">

@@ -51,13 +51,21 @@ async fn main() -> Result<()> {
         }
     }
 
+    if let Err(e) = config.custom.jmap_url.validate() {
+        error!("Invalid JMAP URL in config: {e}");
+        return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, e.to_string()).into());
+    }
+
     let routes = VersionedApiBuilder::<MissiveConfig>::with_config()
         .with_base_path("/api")
         .add_version(ApiVersion::V1, |router| {
             router
                 .route("/mailboxes", get(routes::mailboxes::list_mailboxes))
                 .route("/emails", get(routes::emails::list_emails))
-                .route("/emails/{id}", get(routes::emails::get_email))
+                .route("/emails/{id}", get(routes::emails::get_email).delete(routes::emails::delete_email))
+                .route("/emails/{id}/reply", get(routes::emails::reply))
+                .route("/emails/{id}/reply-all", get(routes::emails::reply_all))
+                .route("/emails/{id}/forward", get(routes::emails::forward))
                 .route(
                     "/attachments/{blob_id}",
                     get(routes::emails::download_attachment),
