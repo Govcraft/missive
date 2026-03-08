@@ -4,6 +4,7 @@ use acton_service::prelude::*;
 use axum::Extension;
 use axum::extract::FromRequestParts;
 use jmap_client::client::Client;
+use acton_service::session::Session;
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::config::MissiveConfig;
@@ -46,7 +47,7 @@ fn get_credentials(session: &TypedSession<MissiveSession>) -> Option<(String, Se
     }
 }
 
-pub struct AuthenticatedClient(pub Arc<Client>, pub String);
+pub struct AuthenticatedClient(pub Arc<Client>, pub String, pub Session);
 
 impl FromRequestParts<AppState<MissiveConfig>> for AuthenticatedClient {
     type Rejection = MissiveError;
@@ -73,6 +74,8 @@ impl FromRequestParts<AppState<MissiveConfig>> for AuthenticatedClient {
         )
         .await?;
 
-        Ok(AuthenticatedClient(client, username))
+        let raw_session = session.session().clone();
+
+        Ok(AuthenticatedClient(client, username, raw_session))
     }
 }

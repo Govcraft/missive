@@ -3,13 +3,7 @@
         <h2 class="text-lg/7 font-semibold text-gray-900">New Message</h2>
     </div>
     <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
-        {% if let Some(err) = error %}
-        <div class="mb-6 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200 ring-inset">
-            {{ err }}
-        </div>
-        {% endif %}
-
-        <form hx-post="/api/v1/send" hx-target="#email-detail-pane" hx-swap="innerHTML" class="space-y-4">
+        <form id="compose-form" hx-target="#email-detail-pane" hx-swap="innerHTML" class="space-y-4">
             {% if let Some(identity) = identities.first() %}
             <input type="hidden" name="identity_id" value="{{ identity.id }}" />
             <div>
@@ -64,7 +58,16 @@
                     class="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 shadow-xs inset-ring-1 inset-ring-gray-300 hover:bg-gray-50">
                     Cancel
                 </button>
+                <button type="button"
+                    hx-post="/api/v1/drafts"
+                    hx-target="#email-detail-pane"
+                    hx-swap="innerHTML"
+                    hx-include="#compose-form"
+                    class="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 shadow-xs inset-ring-1 inset-ring-gray-300 hover:bg-gray-50">
+                    Save Draft
+                </button>
                 <button type="submit"
+                    hx-post="/api/v1/send"
                     class="rounded-md bg-slate-700 px-3 py-1.5 text-sm font-semibold text-white shadow-xs hover:bg-slate-600">
                     Send
                 </button>

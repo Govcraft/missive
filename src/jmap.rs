@@ -407,6 +407,54 @@ fn parse_address_list(input: &str) -> Vec<EmailAddress> {
         .collect()
 }
 
+pub async fn save_draft(
+    client: &Client,
+    from_email: &str,
+    to: &str,
+    cc: &str,
+    subject: &str,
+    body_text: &str,
+) -> Result<(), MissiveError> {
+    let mailboxes = fetch_mailboxes(client).await?;
+    let drafts_id = mailboxes
+        .iter()
+        .find(|m| m.role == "drafts")
+        .map(|m| m.id.as_str().to_string())
+        .ok_or_else(|| MissiveError::Jmap("No Drafts mailbox found".to_string()))?;
+
+    let mut request = client.build();
+    let email = request.set_email().create();
+    email
+        .mailbox_ids([&drafts_id])
+        .from([EmailAddress::from(from_email)])
+        .subject(subject)
+        .keywords(["$draft"])
+        .body_value("body".to_string(), body_text)
+        .text_body(
+            EmailBodyPart::new()
+                .content_type("text/plain")
+                .part_id("body"),
+        );
+
+    let to_addrs = parse_address_list(to);
+    if !to_addrs.is_empty() {
+        email.to(to_addrs);
+    }
+
+    let cc_addrs = parse_address_list(cc);
+    if !cc_addrs.is_empty() {
+        email.cc(cc_addrs);
+    }
+
+    request.send_set_email().await.map_err(|e| {
+        error!("JMAP save draft error: {e}");
+        MissiveError::Jmap(e.to_string())
+    })?;
+
+    info!("Draft saved successfully");
+    Ok(())
+}
+
 pub async fn send_email(
     client: &Client,
     identity_id: &IdentityId,
@@ -423,10 +471,24 @@ pub async fn send_email(
         ));
     }
 
-    // Step 1: Create email via Email/set
+    // Find Drafts and Sent mailboxes
+    let mailboxes = fetch_mailboxes(client).await?;
+    let drafts_id = mailboxes
+        .iter()
+        .find(|m| m.role == "drafts")
+        .map(|m| m.id.as_str().to_string())
+        .ok_or_else(|| MissiveError::Jmap("No Drafts mailbox found".to_string()))?;
+    let sent_id = mailboxes
+        .iter()
+        .find(|m| m.role == "sent")
+        .map(|m| m.id.as_str().to_string())
+        .ok_or_else(|| MissiveError::Jmap("No Sent mailbox found".to_string()))?;
+
+    // Step 1: Create email via Email/set (placed in Drafts initially)
     let mut request = client.build();
     let email = request.set_email().create();
     email
+        .mailbox_ids([&drafts_id])
         .from([EmailAddress::from(from_email)])
         .to(to_addrs)
         .subject(subject)
@@ -452,17 +514,27 @@ pub async fn send_email(
         .map_err(|e| MissiveError::Jmap(e.to_string()))?;
     let email_id = created_email
         .id()
-        .ok_or_else(|| MissiveError::Jmap("Created email has no ID".to_string()))?;
+        .ok_or_else(|| MissiveError::Jmap("Created email has no ID".to_string()))?
+        .to_string();
 
-    // Step 2: Submit via EmailSubmission/set
+    // Step 2: Submit via EmailSubmission/set with onSuccessUpdateEmail
+    // to move the email from Drafts to Sent
     info!("Submitting email: id={email_id}");
-    client
-        .email_submission_create(email_id, identity_id.as_str())
-        .await
-        .map_err(|e| {
-            error!("JMAP EmailSubmission/set error: {e}");
-            MissiveError::Jmap(e.to_string())
-        })?;
+    let mut request = client.build();
+    let submit_req = request.set_email_submission();
+    submit_req
+        .create()
+        .email_id(&email_id)
+        .identity_id(identity_id.as_str());
+    submit_req
+        .arguments()
+        .on_success_update_email("c0")
+        .mailbox_id(&drafts_id, false)
+        .mailbox_id(&sent_id, true);
+    request.send().await.map_err(|e| {
+        error!("JMAP EmailSubmission/set error: {e}");
+        MissiveError::Jmap(e.to_string())
+    })?;
 
     info!("Email sent successfully");
     Ok(())

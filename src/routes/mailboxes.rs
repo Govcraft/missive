@@ -11,7 +11,7 @@ struct MailboxListTemplate {
 }
 
 pub async fn list_mailboxes(
-    AuthenticatedClient(client, _): AuthenticatedClient,
+    AuthenticatedClient(client, _, _): AuthenticatedClient,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
     info!("list_mailboxes: request received");
     let mailboxes = jmap::fetch_mailboxes(&client).await?;

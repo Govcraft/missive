@@ -1,4 +1,5 @@
 use acton_service::prelude::*;
+use acton_service::session::{FlashMessage, FlashMessages};
 use axum::body::Body;
 
 use crate::config::MissiveConfig;
@@ -31,13 +32,14 @@ struct EmailDetailTemplate {
 #[template(path = "partials/compose_form.html")]
 struct ComposeFormTemplate {
     identities: Vec<IdentityInfo>,
-    error: Option<String>,
     form: ComposeFormData,
 }
 
 #[derive(Template)]
-#[template(path = "partials/compose_success.html")]
-struct ComposeSuccessTemplate;
+#[template(path = "partials/flash_toast.html")]
+struct FlashToastTemplate {
+    messages: Vec<FlashMessage>,
+}
 
 #[derive(Template)]
 #[template(path = "partials/empty_state.html")]
@@ -59,7 +61,7 @@ pub struct ComposeFormData {
 
 pub async fn list_emails(
     State(state): State<AppState<MissiveConfig>>,
-    AuthenticatedClient(client, _): AuthenticatedClient,
+    AuthenticatedClient(client, _, _): AuthenticatedClient,
     Query(params): Query<EmailListParams>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
     info!("list_emails: mailbox_id={}", params.mailbox_id);
@@ -84,7 +86,7 @@ pub async fn list_emails(
 }
 
 pub async fn get_email(
-    AuthenticatedClient(client, _): AuthenticatedClient,
+    AuthenticatedClient(client, _, _): AuthenticatedClient,
     Path(id): Path<EmailId>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
     info!("get_email: id={id}");
@@ -99,7 +101,7 @@ pub struct DownloadParams {
 }
 
 pub async fn download_attachment(
-    AuthenticatedClient(client, _): AuthenticatedClient,
+    AuthenticatedClient(client, _, _): AuthenticatedClient,
     Path(blob_id): Path<BlobId>,
     Query(params): Query<DownloadParams>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
@@ -129,25 +131,31 @@ fn filter_identities_for_user(
 }
 
 pub async fn compose_form(
-    AuthenticatedClient(client, username): AuthenticatedClient,
+    AuthenticatedClient(client, username, session): AuthenticatedClient,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
     info!("compose_form: loading compose view for user={username}");
     let all_identities = jmap::fetch_identities(&client).await?;
     let identities = filter_identities_for_user(all_identities, &username);
-    let error = if identities.is_empty() {
-        Some("No sending identities configured for your account".to_string())
-    } else {
-        None
-    };
+    if identities.is_empty() {
+        FlashMessages::push(
+            &session,
+            FlashMessage::error("No sending identities configured for your account"),
+        )
+        .await
+        .ok();
+        return Ok(HtmlTemplate::page(EmptyStateTemplate)
+            .with_hx_trigger("flashUpdated")
+            .into_response());
+    }
     Ok(HtmlTemplate::page(ComposeFormTemplate {
         identities,
-        error,
         form: ComposeFormData::default(),
-    }))
+    })
+    .into_response())
 }
 
 pub async fn send_email(
-    AuthenticatedClient(client, username): AuthenticatedClient,
+    AuthenticatedClient(client, username, session): AuthenticatedClient,
     Form(form): Form<ComposeFormData>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
     info!("send_email: sending message to={}", form.to);
@@ -160,12 +168,12 @@ pub async fn send_email(
     let from_email = match identity {
         Some(i) => i.email.clone(),
         None => {
-            return Ok(HtmlTemplate::page(ComposeFormTemplate {
-                identities,
-                error: Some("Invalid sending identity".to_string()),
-                form,
-            })
-            .into_response());
+            FlashMessages::push(&session, FlashMessage::error("Invalid sending identity"))
+                .await
+                .ok();
+            return Ok(HtmlTemplate::page(ComposeFormTemplate { identities, form })
+                .with_hx_trigger("flashUpdated")
+                .into_response());
         }
     };
 
@@ -180,19 +188,70 @@ pub async fn send_email(
     )
     .await
     {
-        Ok(()) => Ok(HtmlTemplate::page(ComposeSuccessTemplate).into_response()),
+        Ok(()) => {
+            FlashMessages::push(&session, FlashMessage::success("Message sent"))
+                .await
+                .ok();
+            Ok(HtmlTemplate::page(EmptyStateTemplate)
+                .with_hx_trigger("flashUpdated")
+                .into_response())
+        }
         Err(e) => {
-            let error_msg = e.to_string();
-            Ok(HtmlTemplate::page(ComposeFormTemplate {
-                identities,
-                error: Some(error_msg),
-                form,
-            })
-            .into_response())
+            error!("send_email failed: {e}");
+            FlashMessages::push(&session, FlashMessage::error(e.to_string()))
+                .await
+                .ok();
+            Ok(HtmlTemplate::page(ComposeFormTemplate { identities, form })
+                .with_hx_trigger("flashUpdated")
+                .into_response())
+        }
+    }
+}
+
+pub async fn save_draft(
+    AuthenticatedClient(client, username, session): AuthenticatedClient,
+    Form(form): Form<ComposeFormData>,
+) -> std::result::Result<impl IntoResponse, MissiveError> {
+    info!("save_draft: saving draft");
+    let all_identities = jmap::fetch_identities(&client).await?;
+    let identities = filter_identities_for_user(all_identities, &username);
+    let from_email = identities
+        .iter()
+        .find(|i| i.id.as_str() == form.identity_id)
+        .map(|i| i.email.as_str())
+        .unwrap_or(&username);
+
+    match jmap::save_draft(&client, from_email, &form.to, &form.cc, &form.subject, &form.body)
+        .await
+    {
+        Ok(()) => {
+            FlashMessages::push(&session, FlashMessage::success("Draft saved"))
+                .await
+                .ok();
+            Ok(HtmlTemplate::page(EmptyStateTemplate)
+                .with_hx_trigger("flashUpdated")
+                .into_response())
+        }
+        Err(e) => {
+            error!("save_draft failed: {e}");
+            FlashMessages::push(&session, FlashMessage::error(e.to_string()))
+                .await
+                .ok();
+            Ok(HtmlTemplate::page(ComposeFormTemplate { identities, form })
+                .with_hx_trigger("flashUpdated")
+                .into_response())
         }
     }
 }
 
 pub async fn compose_cancel() -> std::result::Result<impl IntoResponse, MissiveError> {
     Ok(HtmlTemplate::page(EmptyStateTemplate))
+}
+
+pub async fn get_flash(
+    flash: FlashMessages,
+) -> std::result::Result<impl IntoResponse, MissiveError> {
+    Ok(HtmlTemplate::page(FlashToastTemplate {
+        messages: flash.into_messages(),
+    }))
 }
