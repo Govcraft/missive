@@ -27,6 +27,21 @@ function resizeEmailIframe(iframe) {
         iframe.style.height = '600px';
     }
 }
+document.body.addEventListener('emailRead', function() {
+    var row = document.querySelector('.email-row.bg-blue-100');
+    if (row) {
+        row.classList.remove('bg-white');
+        row.classList.add('bg-gray-50/50');
+        row.querySelectorAll('.font-semibold').forEach(function(el) {
+            el.classList.remove('font-semibold', 'text-gray-900');
+            el.classList.add('text-gray-600');
+        });
+        row.querySelectorAll('.font-medium').forEach(function(el) {
+            el.classList.remove('font-medium', 'text-gray-800');
+            el.classList.add('text-gray-600');
+        });
+    }
+});
 document.body.addEventListener('htmx:afterSwap', function(event) {
     if (event.detail.target.id === 'toast-container') {
         event.detail.target.querySelectorAll('[data-auto-dismiss]').forEach(function(toast) {

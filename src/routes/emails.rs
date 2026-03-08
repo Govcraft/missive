@@ -99,7 +99,14 @@ pub async fn get_email(
     info!("get_email: id={id}");
     let email = jmap::fetch_email_detail(&client, &id).await?;
     info!("get_email: returning email subject={}", email.subject);
-    Ok(HtmlTemplate::page(EmailDetailTemplate { email }))
+
+    // Mark as read on the server (fire-and-forget; don't fail the view)
+    if let Err(e) = jmap::mark_email_read(&client, &id).await {
+        error!("Failed to mark email as read: {e}");
+    }
+
+    Ok(HtmlTemplate::page(EmailDetailTemplate { email })
+        .with_hx_trigger("mailboxesUpdated, emailRead"))
 }
 
 #[derive(Deserialize)]
