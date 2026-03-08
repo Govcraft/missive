@@ -11,7 +11,7 @@
     <main class="missive-grid">
         <!-- Mailbox sidebar -->
         <div id="mailbox-pane" class="border-r border-gray-200 bg-gray-50 overflow-hidden overflow-y-auto shadow-sm sm:rounded-md"
-             hx-get="/api/v1/mailboxes" hx-trigger="load" hx-swap="innerHTML">
+             hx-get="/api/v1/mailboxes" hx-trigger="load, mailboxesUpdated from:body" hx-swap="innerHTML">
             <div class="p-4 text-sm text-gray-400">Loading mailboxes...</div>
         </div>
 

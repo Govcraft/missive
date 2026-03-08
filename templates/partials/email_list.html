@@ -7,7 +7,7 @@
 {% else %}
 <ul role="list" class="divide-y divide-gray-200">
 {% for email in emails %}
-    <li>
+    <li id="email-row-{{ email.id }}">
         <a href="#"
            hx-get="/api/v1/emails/{{ email.id }}"
            hx-target="#email-detail-pane"

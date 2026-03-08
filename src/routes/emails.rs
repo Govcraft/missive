@@ -138,23 +138,6 @@ fn empty_state_with_flash() -> Response {
         .into_response()
 }
 
-async fn flash_on_result(
-    session: &Session,
-    success_msg: &str,
-    result: std::result::Result<(), MissiveError>,
-) -> std::result::Result<Response, MissiveError> {
-    match result {
-        Ok(()) => {
-            push_flash(session, FlashMessage::success(success_msg)).await;
-            Ok(empty_state_with_flash())
-        }
-        Err(e) => {
-            error!("operation failed: {e}");
-            push_flash(session, FlashMessage::error(e.to_string())).await;
-            Err(e)
-        }
-    }
-}
 
 fn filter_identities_for_user(
     identities: Vec<IdentityInfo>,
@@ -290,8 +273,22 @@ pub async fn delete_email(
     Path(id): Path<EmailId>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
     info!("delete_email: id={id}");
-    let result = jmap::delete_email(&client, &id).await;
-    flash_on_result(&session, "Email deleted", result).await
+    jmap::delete_email(&client, &id).await?;
+    push_flash(&session, FlashMessage::success("Email deleted")).await;
+
+    // Primary response replaces the detail pane (hx-target="#email-detail-pane").
+    // OOB swap removes the deleted email's row from the list.
+    let html = format!(
+        "<div class=\"flex items-center justify-center h-full text-sm text-gray-400\">\
+            Select an email to read\
+         </div>\
+         <li id=\"email-row-{id}\" hx-swap-oob=\"delete\"></li>"
+    );
+
+    Ok(Response::builder()
+        .header("Content-Type", "text/html")
+        .header("HX-Trigger", "flashUpdated, mailboxesUpdated")
+        .body(Body::from(html))?)
 }
 
 fn prepend_subject_prefix(subject: &str, prefix: &str) -> String {

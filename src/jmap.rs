@@ -657,25 +657,44 @@ pub async fn send_email(
         .to_string();
 
     // Step 2: Submit via EmailSubmission/set with onSuccessUpdateEmail
-    // to move the email from Drafts to Sent
+    // to move the email from Drafts to Sent (and Inbox if self-addressed)
     info!("Submitting email: id={email_id}");
     let mut request = client.build();
     let submit_req = request.set_email_submission();
     let mut rcpt_to = parse_recipient_emails(content.to);
     rcpt_to.extend(parse_recipient_emails(content.cc));
-    rcpt_to.sort_unstable();
-    rcpt_to.dedup();
 
     submit_req
         .create()
         .email_id(&email_id)
         .identity_id(identity_id.as_str())
-        .envelope(content.from_email, rcpt_to);
-    submit_req
+        .envelope(content.from_email, rcpt_to.iter().copied());
+
+    // When sender is also a recipient, Stalwart's duplicate detection will
+    // skip local SMTP delivery (same Message-ID already exists in account).
+    // Add Inbox mailbox directly so the email appears in both Sent and Inbox.
+    let self_addressed = rcpt_to
+        .iter()
+        .any(|r| r.eq_ignore_ascii_case(content.from_email));
+
+    let on_success = submit_req
         .arguments()
         .on_success_update_email("c0")
         .mailbox_id(&drafts_id, false)
         .mailbox_id(&sent_id, true);
+
+    if self_addressed {
+        let inbox_id = mailboxes
+            .iter()
+            .find(|m| m.role == "inbox")
+            .map(|m| m.id.as_str().to_string())
+            .ok_or_else(|| {
+                MissiveError::Jmap(JmapErrorKind::NoMailbox {
+                    role: "inbox".to_string(),
+                })
+            })?;
+        on_success.mailbox_id(&inbox_id, true);
+    }
     request.send().await.map_err(|e| {
         error!("JMAP EmailSubmission/set error: {e}");
         MissiveError::Jmap(JmapErrorKind::SubmissionFailed {
