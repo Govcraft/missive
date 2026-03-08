@@ -26,7 +26,10 @@ pub async fn login(
     Form(form): Form<LoginForm>,
 ) -> impl IntoResponse {
     let jmap_url = &state.config().custom.jmap_url;
-    info!("Login attempt: user={}, jmap_url={}", form.username, jmap_url);
+    info!(
+        "Login attempt: user={}, jmap_url={}",
+        form.username, jmap_url
+    );
     match create_client(jmap_url, &form.username, &form.password).await {
         Ok(client) => {
             cache.insert(form.username.clone(), std::sync::Arc::new(client));

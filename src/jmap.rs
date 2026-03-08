@@ -6,7 +6,8 @@ use chrono::{DateTime, Local};
 use dashmap::DashMap;
 use jmap_client::{
     client::Client,
-    email::{self, Email, EmailAddress},
+    email::{self, Email, EmailAddress, EmailBodyPart},
+    identity,
     mailbox::{self, Role},
 };
 
@@ -89,6 +90,14 @@ macro_rules! define_id {
 define_id!(MailboxId);
 define_id!(EmailId);
 define_id!(BlobId);
+define_id!(IdentityId);
+
+#[derive(Debug, Clone)]
+pub struct IdentityInfo {
+    pub id: IdentityId,
+    pub name: String,
+    pub email: String,
+}
 
 pub type JmapClientCache = Arc<DashMap<String, Arc<Client>>>;
 
@@ -359,6 +368,104 @@ pub async fn download_blob(client: &Client, blob_id: &BlobId) -> Result<Vec<u8>,
         error!("JMAP blob download error: {e}");
         MissiveError::Jmap(e.to_string())
     })
+}
+
+pub async fn fetch_identities(client: &Client) -> Result<Vec<IdentityInfo>, MissiveError> {
+    info!("Fetching identities from JMAP server");
+    let mut request = client.build();
+    request.get_identity().properties([
+        identity::Property::Id,
+        identity::Property::Name,
+        identity::Property::Email,
+    ]);
+
+    let response = request.send_get_identity().await.map_err(|e| {
+        error!("JMAP fetch identities error: {e}");
+        MissiveError::Jmap(e.to_string())
+    })?;
+
+    let identities: Vec<IdentityInfo> = response
+        .list()
+        .iter()
+        .map(|i| IdentityInfo {
+            id: IdentityId::from(i.id().unwrap_or_default()),
+            name: i.name().unwrap_or_default().to_string(),
+            email: i.email().unwrap_or_default().to_string(),
+        })
+        .collect();
+
+    info!("Fetched {} identities from JMAP", identities.len());
+    Ok(identities)
+}
+
+fn parse_address_list(input: &str) -> Vec<EmailAddress> {
+    input
+        .split(',')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(EmailAddress::from)
+        .collect()
+}
+
+pub async fn send_email(
+    client: &Client,
+    identity_id: &IdentityId,
+    from_email: &str,
+    to: &str,
+    cc: &str,
+    subject: &str,
+    body_text: &str,
+) -> Result<(), MissiveError> {
+    let to_addrs = parse_address_list(to);
+    if to_addrs.is_empty() {
+        return Err(MissiveError::Jmap(
+            "At least one recipient required".to_string(),
+        ));
+    }
+
+    // Step 1: Create email via Email/set
+    let mut request = client.build();
+    let email = request.set_email().create();
+    email
+        .from([EmailAddress::from(from_email)])
+        .to(to_addrs)
+        .subject(subject)
+        .body_value("body".to_string(), body_text)
+        .text_body(
+            EmailBodyPart::new()
+                .content_type("text/plain")
+                .part_id("body"),
+        );
+
+    let cc_addrs = parse_address_list(cc);
+    if !cc_addrs.is_empty() {
+        email.cc(cc_addrs);
+    }
+
+    let mut response = request.send_set_email().await.map_err(|e| {
+        error!("JMAP Email/set error: {e}");
+        MissiveError::Jmap(e.to_string())
+    })?;
+
+    let created_email = response
+        .created("c0")
+        .map_err(|e| MissiveError::Jmap(e.to_string()))?;
+    let email_id = created_email
+        .id()
+        .ok_or_else(|| MissiveError::Jmap("Created email has no ID".to_string()))?;
+
+    // Step 2: Submit via EmailSubmission/set
+    info!("Submitting email: id={email_id}");
+    client
+        .email_submission_create(email_id, identity_id.as_str())
+        .await
+        .map_err(|e| {
+            error!("JMAP EmailSubmission/set error: {e}");
+            MissiveError::Jmap(e.to_string())
+        })?;
+
+    info!("Email sent successfully");
+    Ok(())
 }
 
 fn format_timestamp(ts: i64, now: DateTime<Local>) -> String {
@@ -674,6 +781,44 @@ mod tests {
     }
 
     // --- role_sort_priority tests ---
+
+    // --- parse_address_list tests ---
+
+    #[test]
+    fn parse_address_list_single() {
+        let result = parse_address_list("alice@example.com");
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].email(), "alice@example.com");
+    }
+
+    #[test]
+    fn parse_address_list_multiple() {
+        let result = parse_address_list("alice@example.com, bob@example.com");
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].email(), "alice@example.com");
+        assert_eq!(result[1].email(), "bob@example.com");
+    }
+
+    #[test]
+    fn parse_address_list_trailing_leading_commas() {
+        let result = parse_address_list(",alice@example.com,");
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].email(), "alice@example.com");
+    }
+
+    #[test]
+    fn parse_address_list_whitespace_trimmed() {
+        let result = parse_address_list("  alice@example.com  ,  bob@example.com  ");
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].email(), "alice@example.com");
+        assert_eq!(result[1].email(), "bob@example.com");
+    }
+
+    #[test]
+    fn parse_address_list_empty() {
+        let result = parse_address_list("");
+        assert!(result.is_empty());
+    }
 
     #[test]
     fn test_role_sort_priority() {

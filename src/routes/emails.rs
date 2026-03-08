@@ -3,7 +3,7 @@ use axum::body::Body;
 
 use crate::config::MissiveConfig;
 use crate::error::MissiveError;
-use crate::jmap::{self, BlobId, EmailDetail, EmailId, EmailSummary, MailboxId};
+use crate::jmap::{self, BlobId, EmailDetail, EmailId, EmailSummary, IdentityId, IdentityInfo, MailboxId};
 use crate::session::AuthenticatedClient;
 
 #[derive(Deserialize)]
@@ -27,9 +27,39 @@ struct EmailDetailTemplate {
     email: EmailDetail,
 }
 
+#[derive(Template)]
+#[template(path = "partials/compose_form.html")]
+struct ComposeFormTemplate {
+    identities: Vec<IdentityInfo>,
+    error: Option<String>,
+    form: ComposeFormData,
+}
+
+#[derive(Template)]
+#[template(path = "partials/compose_success.html")]
+struct ComposeSuccessTemplate;
+
+#[derive(Template)]
+#[template(path = "partials/empty_state.html")]
+struct EmptyStateTemplate;
+
+#[derive(Deserialize, Default)]
+pub struct ComposeFormData {
+    #[serde(default)]
+    pub identity_id: String,
+    #[serde(default)]
+    pub to: String,
+    #[serde(default)]
+    pub cc: String,
+    #[serde(default)]
+    pub subject: String,
+    #[serde(default)]
+    pub body: String,
+}
+
 pub async fn list_emails(
     State(state): State<AppState<MissiveConfig>>,
-    AuthenticatedClient(client): AuthenticatedClient,
+    AuthenticatedClient(client, _): AuthenticatedClient,
     Query(params): Query<EmailListParams>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
     info!("list_emails: mailbox_id={}", params.mailbox_id);
@@ -54,7 +84,7 @@ pub async fn list_emails(
 }
 
 pub async fn get_email(
-    AuthenticatedClient(client): AuthenticatedClient,
+    AuthenticatedClient(client, _): AuthenticatedClient,
     Path(id): Path<EmailId>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
     info!("get_email: id={id}");
@@ -69,7 +99,7 @@ pub struct DownloadParams {
 }
 
 pub async fn download_attachment(
-    AuthenticatedClient(client): AuthenticatedClient,
+    AuthenticatedClient(client, _): AuthenticatedClient,
     Path(blob_id): Path<BlobId>,
     Query(params): Query<DownloadParams>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
@@ -83,4 +113,86 @@ pub async fn download_attachment(
             format!("attachment; filename=\"{filename}\""),
         )
         .body(Body::from(data))?)
+}
+
+fn filter_identities_for_user(
+    identities: Vec<IdentityInfo>,
+    username: &str,
+) -> Vec<IdentityInfo> {
+    let filtered: Vec<IdentityInfo> = identities
+        .iter()
+        .filter(|i| i.email == username)
+        .cloned()
+        .collect();
+    // Fall back to all identities if none match the username exactly
+    if filtered.is_empty() { identities } else { filtered }
+}
+
+pub async fn compose_form(
+    AuthenticatedClient(client, username): AuthenticatedClient,
+) -> std::result::Result<impl IntoResponse, MissiveError> {
+    info!("compose_form: loading compose view for user={username}");
+    let all_identities = jmap::fetch_identities(&client).await?;
+    let identities = filter_identities_for_user(all_identities, &username);
+    let error = if identities.is_empty() {
+        Some("No sending identities configured for your account".to_string())
+    } else {
+        None
+    };
+    Ok(HtmlTemplate::page(ComposeFormTemplate {
+        identities,
+        error,
+        form: ComposeFormData::default(),
+    }))
+}
+
+pub async fn send_email(
+    AuthenticatedClient(client, username): AuthenticatedClient,
+    Form(form): Form<ComposeFormData>,
+) -> std::result::Result<impl IntoResponse, MissiveError> {
+    info!("send_email: sending message to={}", form.to);
+    let all_identities = jmap::fetch_identities(&client).await?;
+    let identities = filter_identities_for_user(all_identities, &username);
+    let identity = identities
+        .iter()
+        .find(|i| i.id.as_str() == form.identity_id);
+
+    let from_email = match identity {
+        Some(i) => i.email.clone(),
+        None => {
+            return Ok(HtmlTemplate::page(ComposeFormTemplate {
+                identities,
+                error: Some("Invalid sending identity".to_string()),
+                form,
+            })
+            .into_response());
+        }
+    };
+
+    match jmap::send_email(
+        &client,
+        &IdentityId::from(form.identity_id.as_str()),
+        &from_email,
+        &form.to,
+        &form.cc,
+        &form.subject,
+        &form.body,
+    )
+    .await
+    {
+        Ok(()) => Ok(HtmlTemplate::page(ComposeSuccessTemplate).into_response()),
+        Err(e) => {
+            let error_msg = e.to_string();
+            Ok(HtmlTemplate::page(ComposeFormTemplate {
+                identities,
+                error: Some(error_msg),
+                form,
+            })
+            .into_response())
+        }
+    }
+}
+
+pub async fn compose_cancel() -> std::result::Result<impl IntoResponse, MissiveError> {
+    Ok(HtmlTemplate::page(EmptyStateTemplate))
 }

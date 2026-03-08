@@ -62,6 +62,9 @@ async fn main() -> Result<()> {
                     "/attachments/{blob_id}",
                     get(routes::emails::download_attachment),
                 )
+                .route("/compose", get(routes::emails::compose_form))
+                .route("/compose/cancel", get(routes::emails::compose_cancel))
+                .route("/send", post(routes::emails::send_email))
                 .layer(Extension(client_cache.clone()))
                 .layer(session_layer.clone())
         })

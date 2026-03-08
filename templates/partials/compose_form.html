@@ -1,0 +1,74 @@
+<div class="overflow-hidden bg-white">
+    <div class="px-4 py-5 sm:px-6">
+        <h2 class="text-lg/7 font-semibold text-gray-900">New Message</h2>
+    </div>
+    <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
+        {% if let Some(err) = error %}
+        <div class="mb-6 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200 ring-inset">
+            {{ err }}
+        </div>
+        {% endif %}
+
+        <form hx-post="/api/v1/send" hx-target="#email-detail-pane" hx-swap="innerHTML" class="space-y-4">
+            {% if let Some(identity) = identities.first() %}
+            <input type="hidden" name="identity_id" value="{{ identity.id }}" />
+            <div>
+                <label class="block text-sm/6 font-medium text-gray-900">From</label>
+                <div class="mt-2">
+                    <div class="block w-full rounded-md bg-gray-50 px-3 py-1.5 text-base text-gray-900 sm:text-sm/6">
+                        {{ identity.name }} &lt;{{ identity.email }}&gt;
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div>
+                <label for="to" class="block text-sm/6 font-medium text-gray-900">To</label>
+                <div class="mt-2">
+                    <input id="to" type="text" name="to" value="{{ form.to }}" required
+                        class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-slate-600 sm:text-sm/6"
+                        placeholder="recipient@example.com" />
+                </div>
+            </div>
+
+            <div>
+                <label for="cc" class="block text-sm/6 font-medium text-gray-900">Cc</label>
+                <div class="mt-2">
+                    <input id="cc" type="text" name="cc" value="{{ form.cc }}"
+                        class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-slate-600 sm:text-sm/6"
+                        placeholder="cc@example.com" />
+                </div>
+            </div>
+
+            <div>
+                <label for="subject" class="block text-sm/6 font-medium text-gray-900">Subject</label>
+                <div class="mt-2">
+                    <input id="subject" type="text" name="subject" value="{{ form.subject }}"
+                        class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-slate-600 sm:text-sm/6" />
+                </div>
+            </div>
+
+            <div>
+                <label for="body" class="block text-sm/6 font-medium text-gray-900">Message</label>
+                <div class="mt-2">
+                    <textarea id="body" name="body" rows="10"
+                        class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-slate-600 sm:text-sm/6 min-h-48 sm:min-h-64">{{ form.body }}</textarea>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4">
+                <button type="button"
+                    hx-get="/api/v1/compose/cancel"
+                    hx-target="#email-detail-pane"
+                    hx-swap="innerHTML"
+                    class="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 shadow-xs inset-ring-1 inset-ring-gray-300 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="submit"
+                    class="rounded-md bg-slate-700 px-3 py-1.5 text-sm font-semibold text-white shadow-xs hover:bg-slate-600">
+                    Send
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

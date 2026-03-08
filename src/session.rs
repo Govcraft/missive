@@ -46,7 +46,7 @@ fn get_credentials(session: &TypedSession<MissiveSession>) -> Option<(String, Se
     }
 }
 
-pub struct AuthenticatedClient(pub Arc<Client>);
+pub struct AuthenticatedClient(pub Arc<Client>, pub String);
 
 impl FromRequestParts<AppState<MissiveConfig>> for AuthenticatedClient {
     type Rejection = MissiveError;
@@ -73,6 +73,6 @@ impl FromRequestParts<AppState<MissiveConfig>> for AuthenticatedClient {
         )
         .await?;
 
-        Ok(AuthenticatedClient(client))
+        Ok(AuthenticatedClient(client, username))
     }
 }

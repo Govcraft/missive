@@ -10,7 +10,16 @@
     <div aria-hidden="true" class="h-6 w-px bg-gray-900/10 lg:hidden"></div>
 
     <div class="flex flex-1 items-center justify-between">
-        <h1 class="text-sm/6 font-semibold text-gray-900">{{ page_title }}</h1>
+        <div class="flex items-center gap-x-4">
+            <h1 class="text-sm/6 font-semibold text-gray-900">{{ page_title }}</h1>
+            <button type="button"
+                hx-get="/api/v1/compose"
+                hx-target="#email-detail-pane"
+                hx-swap="innerHTML"
+                class="rounded-md bg-slate-700 px-3 py-1.5 text-sm font-semibold text-white shadow-xs hover:bg-slate-600">
+                Compose
+            </button>
+        </div>
         <div class="flex items-center gap-x-4 lg:gap-x-6">
             <!-- Profile dropdown -->
             <el-dropdown class="relative">
