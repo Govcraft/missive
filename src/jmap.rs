@@ -497,11 +497,17 @@ pub struct EmailContent<'a> {
     pub threading: &'a ThreadingHeaders<'a>,
 }
 
-fn parse_address_list(input: &str) -> Vec<EmailAddress> {
+fn parse_recipient_emails(input: &str) -> Vec<&str> {
     input
         .split(',')
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
+        .collect()
+}
+
+fn parse_address_list(input: &str) -> Vec<EmailAddress> {
+    parse_recipient_emails(input)
+        .into_iter()
         .map(EmailAddress::from)
         .collect()
 }
@@ -655,10 +661,16 @@ pub async fn send_email(
     info!("Submitting email: id={email_id}");
     let mut request = client.build();
     let submit_req = request.set_email_submission();
+    let mut rcpt_to = parse_recipient_emails(content.to);
+    rcpt_to.extend(parse_recipient_emails(content.cc));
+    rcpt_to.sort_unstable();
+    rcpt_to.dedup();
+
     submit_req
         .create()
         .email_id(&email_id)
-        .identity_id(identity_id.as_str());
+        .identity_id(identity_id.as_str())
+        .envelope(content.from_email, rcpt_to);
     submit_req
         .arguments()
         .on_success_update_email("c0")
@@ -1059,6 +1071,52 @@ mod tests {
     fn parse_address_list_empty() {
         let result = parse_address_list("");
         assert!(result.is_empty());
+    }
+
+    // --- parse_recipient_emails tests ---
+
+    #[test]
+    fn parse_recipient_emails_to_only() {
+        let result = parse_recipient_emails("alice@example.com, bob@example.com");
+        assert_eq!(result, vec!["alice@example.com", "bob@example.com"]);
+    }
+
+    #[test]
+    fn parse_recipient_emails_empty_cc() {
+        let mut rcpt_to = parse_recipient_emails("alice@example.com");
+        rcpt_to.extend(parse_recipient_emails(""));
+        assert_eq!(rcpt_to, vec!["alice@example.com"]);
+    }
+
+    #[test]
+    fn parse_recipient_emails_to_and_cc() {
+        let mut rcpt_to = parse_recipient_emails("alice@example.com");
+        rcpt_to.extend(parse_recipient_emails("bob@example.com, carol@example.com"));
+        assert_eq!(
+            rcpt_to,
+            vec!["alice@example.com", "bob@example.com", "carol@example.com"]
+        );
+    }
+
+    #[test]
+    fn parse_recipient_emails_self_delivery() {
+        let sender = "alice@example.com";
+        let mut rcpt_to = parse_recipient_emails(sender);
+        rcpt_to.extend(parse_recipient_emails(""));
+        assert_eq!(rcpt_to, vec!["alice@example.com"]);
+        assert!(rcpt_to.contains(&sender));
+    }
+
+    #[test]
+    fn parse_recipient_emails_dedup_across_to_and_cc() {
+        let mut rcpt_to = parse_recipient_emails("alice@example.com, bob@example.com");
+        rcpt_to.extend(parse_recipient_emails("bob@example.com, carol@example.com"));
+        rcpt_to.sort_unstable();
+        rcpt_to.dedup();
+        assert_eq!(
+            rcpt_to,
+            vec!["alice@example.com", "bob@example.com", "carol@example.com"]
+        );
     }
 
     #[test]
