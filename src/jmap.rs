@@ -16,6 +16,46 @@ use serde::{Deserialize, Serialize};
 use crate::error::{JmapErrorKind, MissiveError};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SearchQuery(String);
+
+impl SearchQuery {
+    pub fn new(s: &str) -> Option<Self> {
+        let trimmed = s.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(Self(trimmed.to_string()))
+        }
+    }
+}
+
+impl std::fmt::Display for SearchQuery {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl AsRef<str> for SearchQuery {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+fn build_email_filter(
+    mailbox_id: &MailboxId,
+    search: Option<&SearchQuery>,
+) -> jmap_client::core::query::Filter<email::query::Filter> {
+    let mailbox = email::query::Filter::in_mailbox(mailbox_id.as_str());
+    match search {
+        Some(q) => jmap_client::core::query::Filter::and([
+            mailbox,
+            email::query::Filter::text(q.as_ref()),
+        ]),
+        None => mailbox.into(),
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct JmapUrlError(String);
 
 impl std::fmt::Display for JmapUrlError {
@@ -287,11 +327,12 @@ pub async fn fetch_emails(
     mailbox_id: &MailboxId,
     position: usize,
     limit: usize,
+    search: Option<&SearchQuery>,
 ) -> Result<Vec<EmailSummary>, MissiveError> {
-    info!("Fetching emails: mailbox_id={mailbox_id}, position={position}, limit={limit}");
+    info!("Fetching emails: mailbox_id={mailbox_id}, position={position}, limit={limit}, search={search:?}");
     let mut request = client.build();
     let query_req = request.query_email();
-    query_req.filter(email::query::Filter::in_mailbox(mailbox_id.as_str()));
+    query_req.filter(build_email_filter(mailbox_id, search));
     query_req.sort([email::query::Comparator::received_at().descending()]);
     query_req.position(position as i32);
     query_req.limit(limit);
@@ -1226,5 +1267,59 @@ mod tests {
     fn jmap_url_validate_invalid() {
         let url = JmapUrl::from("mail.example.com");
         assert!(url.validate().is_err());
+    }
+
+    // --- SearchQuery tests ---
+
+    #[test]
+    fn search_query_empty_returns_none() {
+        assert!(SearchQuery::new("").is_none());
+    }
+
+    #[test]
+    fn search_query_whitespace_returns_none() {
+        assert!(SearchQuery::new("  ").is_none());
+    }
+
+    #[test]
+    fn search_query_valid_returns_some() {
+        let q = SearchQuery::new("hello").unwrap();
+        assert_eq!(q.as_ref(), "hello");
+    }
+
+    #[test]
+    fn search_query_trims_whitespace() {
+        let q = SearchQuery::new(" hello world ").unwrap();
+        assert_eq!(q.as_ref(), "hello world");
+    }
+
+    #[test]
+    fn search_query_display() {
+        let q = SearchQuery::new("test").unwrap();
+        assert_eq!(format!("{q}"), "test");
+    }
+
+    // --- build_email_filter tests ---
+
+    #[test]
+    fn build_filter_without_search() {
+        let mailbox_id = MailboxId::from("inbox-1");
+        let filter = build_email_filter(&mailbox_id, None);
+        // Without search, should be a simple condition (not an operator)
+        let json = serde_json::to_string(&filter).unwrap();
+        assert!(json.contains("inMailbox"));
+        assert!(!json.contains("text"));
+    }
+
+    #[test]
+    fn build_filter_with_search() {
+        let mailbox_id = MailboxId::from("inbox-1");
+        let query = SearchQuery::new("hello").unwrap();
+        let filter = build_email_filter(&mailbox_id, Some(&query));
+        let json = serde_json::to_string(&filter).unwrap();
+        assert!(json.contains("inMailbox"));
+        assert!(json.contains("\"text\""));
+        assert!(json.contains("hello"));
+        assert!(json.contains("AND"));
     }
 }

@@ -1,7 +1,12 @@
 {% if emails.is_empty() %}
 {% if next_position.is_none() %}
 <div class="flex items-center justify-center h-full text-sm text-gray-400">
+    {% match search %}
+    {% when Some with (q) %}
+    No results for &ldquo;{{ q }}&rdquo;
+    {% when None %}
     No emails in this mailbox
+    {% endmatch %}
 </div>
 {% endif %}
 {% else %}
@@ -39,7 +44,7 @@
 </ul>
 {% match next_position %}
 {% when Some with (pos) %}
-<div hx-get="/api/v1/emails?mailbox_id={{ mailbox_id }}&amp;position={{ pos }}"
+<div hx-get="/api/v1/emails?mailbox_id={{ mailbox_id }}&amp;position={{ pos }}{% if let Some(q) = search %}&amp;search={{ q }}{% endif %}"
      hx-trigger="intersect once root:#email-list-pane threshold:0.1"
      hx-swap="outerHTML"
      class="flex items-center justify-center py-4 text-sm text-gray-400">

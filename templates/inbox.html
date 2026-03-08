@@ -5,8 +5,10 @@
 {% block content %}
 {% include "partials/app_nav.html" %}
 
-<div class="lg:pl-20">
+<div class="flex flex-col h-screen lg:pl-20">
     {% include "partials/app_header.html" %}
+
+    <input type="hidden" name="mailbox_id" id="active-mailbox-id" value="" />
 
     <main class="missive-grid">
         <!-- Mailbox sidebar -->

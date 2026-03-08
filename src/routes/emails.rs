@@ -6,7 +6,7 @@ use axum::body::Body;
 
 use crate::config::MissiveConfig;
 use crate::error::MissiveError;
-use crate::jmap::{self, BlobId, EmailDetail, EmailId, EmailSummary, IdentityId, IdentityInfo, MailboxId};
+use crate::jmap::{self, BlobId, EmailDetail, EmailId, EmailSummary, IdentityId, IdentityInfo, MailboxId, SearchQuery};
 use crate::session::AuthenticatedClient;
 
 #[derive(Deserialize)]
@@ -14,6 +14,8 @@ pub struct EmailListParams {
     pub mailbox_id: MailboxId,
     #[serde(default)]
     pub position: usize,
+    #[serde(default)]
+    pub search: Option<String>,
 }
 
 #[derive(Template)]
@@ -22,6 +24,7 @@ struct EmailListTemplate {
     emails: Vec<EmailSummary>,
     mailbox_id: MailboxId,
     next_position: Option<usize>,
+    search: Option<SearchQuery>,
 }
 
 #[derive(Template)]
@@ -71,10 +74,11 @@ pub async fn list_emails(
     AuthenticatedClient(client, _, _): AuthenticatedClient,
     Query(params): Query<EmailListParams>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    info!("list_emails: mailbox_id={}", params.mailbox_id);
+    let search = params.search.as_deref().and_then(SearchQuery::new);
+    info!("list_emails: mailbox_id={}, search={search:?}", params.mailbox_id);
     let page_size = state.config().custom.page_size;
     let emails =
-        jmap::fetch_emails(&client, &params.mailbox_id, params.position, page_size).await?;
+        jmap::fetch_emails(&client, &params.mailbox_id, params.position, page_size, search.as_ref()).await?;
     info!(
         "list_emails: returning {} emails at position {}",
         emails.len(),
@@ -89,6 +93,7 @@ pub async fn list_emails(
         emails,
         mailbox_id: params.mailbox_id,
         next_position,
+        search,
     }))
 }
 
