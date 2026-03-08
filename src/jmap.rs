@@ -535,6 +535,7 @@ pub struct EmailContent<'a> {
     pub from_email: &'a str,
     pub to: &'a str,
     pub cc: &'a str,
+    pub bcc: &'a str,
     pub subject: &'a str,
     pub body_text: &'a str,
     pub threading: &'a ThreadingHeaders<'a>,
@@ -592,6 +593,11 @@ pub async fn save_draft(
     let cc_addrs = parse_address_list(content.cc);
     if !cc_addrs.is_empty() {
         email.cc(cc_addrs);
+    }
+
+    let bcc_addrs = parse_address_list(content.bcc);
+    if !bcc_addrs.is_empty() {
+        email.bcc(bcc_addrs);
     }
 
     if let Some(irt) = content.threading.in_reply_to.filter(|s| !s.is_empty()) {
@@ -666,6 +672,11 @@ pub async fn send_email(
         email.cc(cc_addrs);
     }
 
+    let bcc_addrs = parse_address_list(content.bcc);
+    if !bcc_addrs.is_empty() {
+        email.bcc(bcc_addrs);
+    }
+
     if let Some(irt) = content.threading.in_reply_to.filter(|s| !s.is_empty()) {
         let ids: Vec<String> = irt.split_whitespace().map(String::from).collect();
         email.in_reply_to(ids);
@@ -706,6 +717,7 @@ pub async fn send_email(
     let submit_req = request.set_email_submission();
     let mut rcpt_to = parse_recipient_emails(content.to);
     rcpt_to.extend(parse_recipient_emails(content.cc));
+    rcpt_to.extend(parse_recipient_emails(content.bcc));
 
     submit_req
         .create()
@@ -800,6 +812,46 @@ pub async fn delete_email(client: &Client, email_id: &EmailId) -> Result<(), Mis
         })
     })?;
     info!("Email deleted successfully: id={email_id}");
+    Ok(())
+}
+
+pub async fn find_mailbox_by_role(
+    client: &Client,
+    role: &str,
+) -> Result<MailboxId, MissiveError> {
+    let mailboxes = fetch_mailboxes(client).await?;
+    mailboxes
+        .iter()
+        .find(|m| m.role == role)
+        .map(|m| m.id.clone())
+        .ok_or_else(|| {
+            MissiveError::Jmap(JmapErrorKind::NoMailbox {
+                role: role.to_string(),
+            })
+        })
+}
+
+pub async fn move_email(
+    client: &Client,
+    email_id: &EmailId,
+    from_mailbox_id: &MailboxId,
+    to_mailbox_id: &MailboxId,
+) -> Result<(), MissiveError> {
+    debug!("Moving email {email_id} from {from_mailbox_id} to {to_mailbox_id}");
+    let mut request = client.build();
+    request
+        .set_email()
+        .update(email_id.as_str())
+        .mailbox_id(from_mailbox_id.as_str(), false)
+        .mailbox_id(to_mailbox_id.as_str(), true);
+    request.send_set_email().await.map_err(|e| {
+        error!("JMAP Email/set move error: {e}");
+        MissiveError::Jmap(JmapErrorKind::QueryFailed {
+            method: "Email/set".to_string(),
+            message: e.to_string(),
+        })
+    })?;
+    info!("Email moved successfully: id={email_id}");
     Ok(())
 }
 

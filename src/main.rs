@@ -67,6 +67,8 @@ async fn main() -> Result<()> {
                 .route("/emails/{id}/reply", get(routes::emails::reply))
                 .route("/emails/{id}/reply-all", get(routes::emails::reply_all))
                 .route("/emails/{id}/forward", get(routes::emails::forward))
+                .route("/emails/{id}/archive", post(routes::emails::archive_email))
+                .route("/emails/{id}/move", post(routes::emails::move_email))
                 .route(
                     "/attachments/{blob_id}",
                     get(routes::emails::download_attachment),

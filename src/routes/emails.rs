@@ -6,7 +6,7 @@ use axum::body::Body;
 
 use crate::config::MissiveConfig;
 use crate::error::MissiveError;
-use crate::jmap::{self, BlobId, EmailDetail, EmailId, EmailSummary, IdentityId, IdentityInfo, MailboxId, SearchQuery};
+use crate::jmap::{self, BlobId, EmailDetail, EmailId, EmailSummary, IdentityId, IdentityInfo, MailboxId, MailboxInfo, SearchQuery};
 use crate::session::AuthenticatedClient;
 
 #[derive(Deserialize)]
@@ -32,6 +32,7 @@ struct EmailListTemplate {
 #[template(path = "partials/email_detail.html")]
 struct EmailDetailTemplate {
     email: EmailDetail,
+    mailboxes: Vec<MailboxInfo>,
 }
 
 #[derive(Template)]
@@ -60,6 +61,8 @@ pub struct ComposeFormData {
     pub to: String,
     #[serde(default)]
     pub cc: String,
+    #[serde(default)]
+    pub bcc: String,
     #[serde(default)]
     pub subject: String,
     #[serde(default)]
@@ -105,6 +108,7 @@ pub async fn get_email(
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
     debug!("get_email: id={id}");
     let email = jmap::fetch_email_detail(&client, &id).await?;
+    let mailboxes = jmap::fetch_mailboxes(&client).await?;
     debug!("get_email: returning email subject={}", email.subject);
 
     // Mark as read on the server (fire-and-forget; don't fail the view)
@@ -112,7 +116,7 @@ pub async fn get_email(
         error!("Failed to mark email as read: {e}");
     }
 
-    Ok(HtmlTemplate::page(EmailDetailTemplate { email })
+    Ok(HtmlTemplate::page(EmailDetailTemplate { email, mailboxes })
         .with_hx_trigger("mailboxesUpdated, emailRead"))
 }
 
@@ -217,6 +221,7 @@ pub async fn send_email(
         from_email: &from_email,
         to: &form.to,
         cc: &form.cc,
+        bcc: &form.bcc,
         subject: &form.subject,
         body_text: &form.body,
         threading: &threading,
@@ -263,6 +268,7 @@ pub async fn save_draft(
         from_email,
         to: &form.to,
         cc: &form.cc,
+        bcc: &form.bcc,
         subject: &form.subject,
         body_text: &form.body,
         threading: &threading,
@@ -282,16 +288,87 @@ pub async fn save_draft(
     }
 }
 
+#[derive(Deserialize)]
+pub struct DeleteParams {
+    pub mailbox_id: MailboxId,
+}
+
 pub async fn delete_email(
     AuthenticatedClient(client, _, session): AuthenticatedClient,
     Path(id): Path<EmailId>,
+    Query(params): Query<DeleteParams>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
     debug!("delete_email: id={id}");
-    jmap::delete_email(&client, &id).await?;
-    push_flash(&session, FlashMessage::success("Email deleted")).await;
+    let trash_id = jmap::find_mailbox_by_role(&client, "trash").await?;
+
+    let flash_msg = if params.mailbox_id == trash_id {
+        jmap::delete_email(&client, &id).await?;
+        "Email permanently deleted"
+    } else {
+        jmap::move_email(&client, &id, &params.mailbox_id, &trash_id).await?;
+        "Email moved to trash"
+    };
+
+    push_flash(&session, FlashMessage::success(flash_msg)).await;
 
     // Primary response replaces the detail pane (hx-target="#email-detail-pane").
     // OOB swap removes the deleted email's row from the list.
+    let html = format!(
+        "<div class=\"flex items-center justify-center h-full text-sm text-gray-400\">\
+            Select an email to read\
+         </div>\
+         <li id=\"email-row-{id}\" hx-swap-oob=\"delete\"></li>"
+    );
+
+    Ok(Response::builder()
+        .header("Content-Type", "text/html")
+        .header("HX-Trigger", "flashUpdated, mailboxesUpdated")
+        .body(Body::from(html))?)
+}
+
+#[derive(Deserialize)]
+pub struct ArchiveParams {
+    pub mailbox_id: MailboxId,
+}
+
+pub async fn archive_email(
+    AuthenticatedClient(client, _, session): AuthenticatedClient,
+    Path(id): Path<EmailId>,
+    Form(params): Form<ArchiveParams>,
+) -> std::result::Result<impl IntoResponse, MissiveError> {
+    debug!("archive_email: id={id}");
+    let archive_id = jmap::find_mailbox_by_role(&client, "archive").await?;
+    jmap::move_email(&client, &id, &params.mailbox_id, &archive_id).await?;
+    push_flash(&session, FlashMessage::success("Email archived")).await;
+
+    let html = format!(
+        "<div class=\"flex items-center justify-center h-full text-sm text-gray-400\">\
+            Select an email to read\
+         </div>\
+         <li id=\"email-row-{id}\" hx-swap-oob=\"delete\"></li>"
+    );
+
+    Ok(Response::builder()
+        .header("Content-Type", "text/html")
+        .header("HX-Trigger", "flashUpdated, mailboxesUpdated")
+        .body(Body::from(html))?)
+}
+
+#[derive(Deserialize)]
+pub struct MoveEmailForm {
+    pub target_mailbox_id: MailboxId,
+    pub mailbox_id: MailboxId,
+}
+
+pub async fn move_email(
+    AuthenticatedClient(client, _, session): AuthenticatedClient,
+    Path(id): Path<EmailId>,
+    Form(params): Form<MoveEmailForm>,
+) -> std::result::Result<impl IntoResponse, MissiveError> {
+    debug!("move_email: id={id} to={}", params.target_mailbox_id);
+    jmap::move_email(&client, &id, &params.mailbox_id, &params.target_mailbox_id).await?;
+    push_flash(&session, FlashMessage::success("Email moved")).await;
+
     let html = format!(
         "<div class=\"flex items-center justify-center h-full text-sm text-gray-400\">\
             Select an email to read\

@@ -37,6 +37,15 @@
             </div>
 
             <div>
+                <label for="bcc" class="block text-sm/6 font-medium text-gray-900">Bcc</label>
+                <div class="mt-2">
+                    <input id="bcc" type="text" name="bcc" value="{{ form.bcc }}"
+                        class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-slate-600 sm:text-sm/6"
+                        placeholder="bcc@example.com" />
+                </div>
+            </div>
+
+            <div>
                 <label for="subject" class="block text-sm/6 font-medium text-gray-900">Subject</label>
                 <div class="mt-2">
                     <input id="subject" type="text" name="subject" value="{{ form.subject }}"
