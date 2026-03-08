@@ -25,6 +25,7 @@ struct EmailListTemplate {
     mailbox_id: MailboxId,
     next_position: Option<usize>,
     search: Option<SearchQuery>,
+    total_count: Option<usize>,
 }
 
 #[derive(Template)]
@@ -77,7 +78,7 @@ pub async fn list_emails(
     let search = params.search.as_deref().and_then(SearchQuery::new);
     debug!("list_emails: mailbox_id={}, search={search:?}", params.mailbox_id);
     let page_size = state.config().custom.page_size;
-    let emails =
+    let (emails, total_count) =
         jmap::fetch_emails(&client, &params.mailbox_id, params.position, page_size, search.as_ref()).await?;
     debug!(
         "list_emails: returning {} emails at position {}",
@@ -94,6 +95,7 @@ pub async fn list_emails(
         mailbox_id: params.mailbox_id,
         next_position,
         search,
+        total_count,
     }))
 }
 

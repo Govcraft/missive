@@ -328,7 +328,7 @@ pub async fn fetch_emails(
     position: usize,
     limit: usize,
     search: Option<&SearchQuery>,
-) -> Result<Vec<EmailSummary>, MissiveError> {
+) -> Result<(Vec<EmailSummary>, Option<usize>), MissiveError> {
     debug!("Fetching emails: mailbox_id={mailbox_id}, position={position}, limit={limit}, search={search:?}");
     let mut request = client.build();
     let query_req = request.query_email();
@@ -336,6 +336,7 @@ pub async fn fetch_emails(
     query_req.sort([email::query::Comparator::received_at().descending()]);
     query_req.position(position as i32);
     query_req.limit(limit);
+    query_req.calculate_total(true);
 
     let query_response = request
         .send_single::<jmap_client::core::query::QueryResponse>()
@@ -350,8 +351,9 @@ pub async fn fetch_emails(
 
     let ids: Vec<&str> = query_response.ids().iter().map(|s| s.as_str()).collect();
     debug!("Email query returned {} ids", ids.len());
+    let total = query_response.total();
     if ids.is_empty() {
-        return Ok(Vec::new());
+        return Ok((Vec::new(), total));
     }
 
     let mut request = client.build();
@@ -388,7 +390,7 @@ pub async fn fetch_emails(
         })
         .collect();
 
-    Ok(emails)
+    Ok((emails, total))
 }
 
 pub async fn fetch_email_detail(

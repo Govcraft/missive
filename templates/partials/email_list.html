@@ -10,6 +10,11 @@
 </div>
 {% endif %}
 {% else %}
+{% if let Some(total) = total_count %}
+<div class="px-4 py-2 text-xs text-gray-400 sm:px-6">
+    {{ total }} {% if *total == 1 %}email{% else %}emails{% endif %}
+</div>
+{% endif %}
 <ul role="list" class="divide-y divide-gray-200">
 {% for email in emails %}
     <li id="email-row-{{ email.id }}">
