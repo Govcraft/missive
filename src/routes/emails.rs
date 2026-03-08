@@ -303,6 +303,21 @@ pub async fn delete_email(
         .body(Body::from(html))?)
 }
 
+pub async fn mark_unread(
+    AuthenticatedClient(client, _, session): AuthenticatedClient,
+    Path(id): Path<EmailId>,
+) -> std::result::Result<impl IntoResponse, MissiveError> {
+    info!("mark_unread: id={id}");
+    jmap::mark_email_unread(&client, &id).await?;
+    push_flash(&session, FlashMessage::success("Marked as unread")).await;
+    Ok(Response::builder()
+        .header("Content-Type", "text/html")
+        .header("HX-Trigger", "flashUpdated, mailboxesUpdated")
+        .body(Body::from(
+            "<div class=\"flex items-center justify-center h-full text-sm text-gray-400\">Select an email to read</div>",
+        ))?)
+}
+
 fn prepend_subject_prefix(subject: &str, prefix: &str) -> String {
     let trimmed = subject.trim();
     let check = format!("{prefix}:");

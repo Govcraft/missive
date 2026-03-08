@@ -5,6 +5,7 @@
     <div class="flex items-center gap-3 px-4 sm:px-6 pb-2">
         <span class="isolate inline-flex rounded-md shadow-xs">
             <button type="button"
+                    title="Reply"
                     class="relative inline-flex items-center rounded-l-md bg-white px-4 py-2 text-gray-700 inset-ring-1 inset-ring-gray-300 hover:bg-gray-50 focus:z-10"
                     hx-get="/api/v1/emails/{{ email.id }}/reply"
                     hx-target="#email-detail-pane"
@@ -16,6 +17,7 @@
                 </svg>
             </button>
             <button type="button"
+                    title="Reply All"
                     class="relative -ml-px inline-flex items-center bg-white px-4 py-2 text-gray-700 inset-ring-1 inset-ring-gray-300 hover:bg-gray-50 focus:z-10"
                     hx-get="/api/v1/emails/{{ email.id }}/reply-all"
                     hx-target="#email-detail-pane"
@@ -28,6 +30,7 @@
                 </svg>
             </button>
             <button type="button"
+                    title="Forward"
                     class="relative -ml-px inline-flex items-center rounded-r-md bg-white px-4 py-2 text-gray-700 inset-ring-1 inset-ring-gray-300 hover:bg-gray-50 focus:z-10"
                     hx-get="/api/v1/emails/{{ email.id }}/forward"
                     hx-target="#email-detail-pane"
@@ -41,7 +44,7 @@
         </span>
 
         <span class="isolate inline-flex rounded-md shadow-xs">
-            <button type="button" class="relative inline-flex items-center rounded-l-md bg-white px-4 py-2 text-gray-400 inset-ring-1 inset-ring-gray-300 hover:bg-gray-50 focus:z-10" disabled>
+            <button type="button" title="Archive" class="relative inline-flex items-center rounded-l-md bg-white px-4 py-2 text-gray-400 inset-ring-1 inset-ring-gray-300 hover:bg-gray-50 focus:z-10" disabled>
                 <span class="sr-only">Archive</span>
                 <!-- Heroicons: archive-box -->
                 <svg class="size-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -49,6 +52,7 @@
                 </svg>
             </button>
             <button type="button"
+                    title="Delete"
                     class="relative -ml-px inline-flex items-center rounded-r-md bg-white px-4 py-2 text-gray-700 inset-ring-1 inset-ring-gray-300 hover:bg-gray-50 focus:z-10"
                     hx-delete="/api/v1/emails/{{ email.id }}"
                     hx-target="#email-detail-pane"
@@ -61,6 +65,18 @@
                 </svg>
             </button>
         </span>
+
+        <button type="button"
+                title="Mark as unread"
+                class="relative inline-flex items-center rounded-md bg-white px-4 py-2 text-gray-700 shadow-xs inset-ring-1 inset-ring-gray-300 hover:bg-gray-50 focus:z-10"
+                hx-post="/api/v1/emails/{{ email.id }}/mark-unread"
+                hx-target="#email-detail-pane"
+                hx-swap="innerHTML">
+            <span class="sr-only">Mark as unread</span>
+            <svg class="size-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+            </svg>
+        </button>
     </div>
     <div class="border-t border-gray-200 px-4 py-3 sm:px-6">
         <div class="space-y-1 text-sm text-gray-600">

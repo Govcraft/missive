@@ -763,6 +763,22 @@ pub async fn mark_email_read(client: &Client, email_id: &EmailId) -> Result<(), 
     Ok(())
 }
 
+pub async fn mark_email_unread(client: &Client, email_id: &EmailId) -> Result<(), MissiveError> {
+    let mut request = client.build();
+    request
+        .set_email()
+        .update(email_id.as_str())
+        .keyword("$seen", false);
+    request.send_set_email().await.map_err(|e| {
+        error!("JMAP Email/set keyword update error: {e}");
+        MissiveError::Jmap(JmapErrorKind::QueryFailed {
+            method: "Email/set".to_string(),
+            message: e.to_string(),
+        })
+    })?;
+    Ok(())
+}
+
 pub async fn delete_email(client: &Client, email_id: &EmailId) -> Result<(), MissiveError> {
     info!("Deleting email: id={email_id}");
     let mut request = client.build();
