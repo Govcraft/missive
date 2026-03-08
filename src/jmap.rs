@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use acton_service::prelude::{error, info};
+use acton_service::prelude::{debug, error, info};
 use chrono::{DateTime, Local};
 use dashmap::DashMap;
 use jmap_client::{
@@ -256,7 +256,7 @@ pub async fn create_client(
 ) -> Result<Client, MissiveError> {
     let host = jmap_url.host();
 
-    info!("Creating JMAP client: url={jmap_url}, host={host}, user={username}");
+    debug!("Creating JMAP client: url={jmap_url}, host={host}, user={username}");
 
     let client = Client::new()
         .credentials((username, password))
@@ -281,7 +281,7 @@ pub async fn create_client(
 }
 
 pub async fn fetch_mailboxes(client: &Client) -> Result<Vec<MailboxInfo>, MissiveError> {
-    info!("Fetching mailboxes from JMAP server");
+    debug!("Fetching mailboxes from JMAP server");
     let mut request = client.build();
     request.get_mailbox().properties([
         mailbox::Property::Id,
@@ -309,7 +309,7 @@ pub async fn fetch_mailboxes(client: &Client) -> Result<Vec<MailboxInfo>, Missiv
         })
         .collect();
 
-    info!("Fetched {} mailboxes from JMAP", mailboxes.len());
+    debug!("Fetched {} mailboxes from JMAP", mailboxes.len());
 
     mailboxes.sort_by(|a, b| {
         let a_priority = role_sort_priority(&a.role);
@@ -329,7 +329,7 @@ pub async fn fetch_emails(
     limit: usize,
     search: Option<&SearchQuery>,
 ) -> Result<Vec<EmailSummary>, MissiveError> {
-    info!("Fetching emails: mailbox_id={mailbox_id}, position={position}, limit={limit}, search={search:?}");
+    debug!("Fetching emails: mailbox_id={mailbox_id}, position={position}, limit={limit}, search={search:?}");
     let mut request = client.build();
     let query_req = request.query_email();
     query_req.filter(build_email_filter(mailbox_id, search));
@@ -349,7 +349,7 @@ pub async fn fetch_emails(
         })?;
 
     let ids: Vec<&str> = query_response.ids().iter().map(|s| s.as_str()).collect();
-    info!("Email query returned {} ids", ids.len());
+    debug!("Email query returned {} ids", ids.len());
     if ids.is_empty() {
         return Ok(Vec::new());
     }
@@ -395,7 +395,7 @@ pub async fn fetch_email_detail(
     client: &Client,
     email_id: &EmailId,
 ) -> Result<EmailDetail, MissiveError> {
-    info!("Fetching email detail: id={email_id}");
+    debug!("Fetching email detail: id={email_id}");
     let mut request = client.build();
     let get_request = request.get_email().ids([email_id.as_str()]);
     get_request.properties([
@@ -482,7 +482,7 @@ fn format_file_size(bytes: usize) -> String {
 }
 
 pub async fn download_blob(client: &Client, blob_id: &BlobId) -> Result<Vec<u8>, MissiveError> {
-    info!("Downloading blob: id={blob_id}");
+    debug!("Downloading blob: id={blob_id}");
     client.download(blob_id.as_str()).await.map_err(|e| {
         error!("JMAP blob download error: {e}");
         MissiveError::Jmap(JmapErrorKind::BlobDownloadFailed {
@@ -493,7 +493,7 @@ pub async fn download_blob(client: &Client, blob_id: &BlobId) -> Result<Vec<u8>,
 }
 
 pub async fn fetch_identities(client: &Client) -> Result<Vec<IdentityInfo>, MissiveError> {
-    info!("Fetching identities from JMAP server");
+    debug!("Fetching identities from JMAP server");
     let mut request = client.build();
     request.get_identity().properties([
         identity::Property::Id,
@@ -519,7 +519,7 @@ pub async fn fetch_identities(client: &Client) -> Result<Vec<IdentityInfo>, Miss
         })
         .collect();
 
-    info!("Fetched {} identities from JMAP", identities.len());
+    debug!("Fetched {} identities from JMAP", identities.len());
     Ok(identities)
 }
 
@@ -699,7 +699,7 @@ pub async fn send_email(
 
     // Step 2: Submit via EmailSubmission/set with onSuccessUpdateEmail
     // to move the email from Drafts to Sent (and Inbox if self-addressed)
-    info!("Submitting email: id={email_id}");
+    debug!("Submitting email: id={email_id}");
     let mut request = client.build();
     let submit_req = request.set_email_submission();
     let mut rcpt_to = parse_recipient_emails(content.to);
@@ -780,7 +780,7 @@ pub async fn mark_email_unread(client: &Client, email_id: &EmailId) -> Result<()
 }
 
 pub async fn delete_email(client: &Client, email_id: &EmailId) -> Result<(), MissiveError> {
-    info!("Deleting email: id={email_id}");
+    debug!("Deleting email: id={email_id}");
     let mut request = client.build();
     request.set_email().destroy([email_id.as_str()]);
     let mut response = request.send_set_email().await.map_err(|e| {

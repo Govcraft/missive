@@ -13,8 +13,8 @@ struct MailboxListTemplate {
 pub async fn list_mailboxes(
     AuthenticatedClient(client, _, _): AuthenticatedClient,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    info!("list_mailboxes: request received");
+    debug!("list_mailboxes: request received");
     let mailboxes = jmap::fetch_mailboxes(&client).await?;
-    info!("list_mailboxes: returning {} mailboxes", mailboxes.len());
+    debug!("list_mailboxes: returning {} mailboxes", mailboxes.len());
     Ok(HtmlTemplate::page(MailboxListTemplate { mailboxes }))
 }

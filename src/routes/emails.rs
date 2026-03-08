@@ -75,11 +75,11 @@ pub async fn list_emails(
     Query(params): Query<EmailListParams>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
     let search = params.search.as_deref().and_then(SearchQuery::new);
-    info!("list_emails: mailbox_id={}, search={search:?}", params.mailbox_id);
+    debug!("list_emails: mailbox_id={}, search={search:?}", params.mailbox_id);
     let page_size = state.config().custom.page_size;
     let emails =
         jmap::fetch_emails(&client, &params.mailbox_id, params.position, page_size, search.as_ref()).await?;
-    info!(
+    debug!(
         "list_emails: returning {} emails at position {}",
         emails.len(),
         params.position
@@ -101,9 +101,9 @@ pub async fn get_email(
     AuthenticatedClient(client, _, _): AuthenticatedClient,
     Path(id): Path<EmailId>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    info!("get_email: id={id}");
+    debug!("get_email: id={id}");
     let email = jmap::fetch_email_detail(&client, &id).await?;
-    info!("get_email: returning email subject={}", email.subject);
+    debug!("get_email: returning email subject={}", email.subject);
 
     // Mark as read on the server (fire-and-forget; don't fail the view)
     if let Err(e) = jmap::mark_email_read(&client, &id).await {
@@ -124,7 +124,7 @@ pub async fn download_attachment(
     Path(blob_id): Path<BlobId>,
     Query(params): Query<DownloadParams>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    info!("download_attachment: blob_id={blob_id}");
+    debug!("download_attachment: blob_id={blob_id}");
     let data = jmap::download_blob(&client, &blob_id).await?;
     let filename = params.name.unwrap_or_else(|| "attachment".to_string());
     Ok(Response::builder()
@@ -139,7 +139,7 @@ pub async fn download_attachment(
 async fn push_flash(session: &Session, message: FlashMessage) {
     let description = format!("{:?}: {}", message.kind, message.message);
     match FlashMessages::push(session, message).await {
-        Ok(()) => info!("flash message pushed: {description}"),
+        Ok(()) => trace!("flash message pushed: {description}"),
         Err(e) => error!("failed to push flash message ({description}): {e}"),
     }
 }
@@ -167,7 +167,7 @@ fn filter_identities_for_user(
 pub async fn compose_form(
     AuthenticatedClient(client, username, session): AuthenticatedClient,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    info!("compose_form: loading compose view for user={username}");
+    debug!("compose_form: loading compose view for user={username}");
     let all_identities = jmap::fetch_identities(&client).await?;
     let identities = filter_identities_for_user(all_identities, &username);
     if identities.is_empty() {
@@ -284,7 +284,7 @@ pub async fn delete_email(
     AuthenticatedClient(client, _, session): AuthenticatedClient,
     Path(id): Path<EmailId>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    info!("delete_email: id={id}");
+    debug!("delete_email: id={id}");
     jmap::delete_email(&client, &id).await?;
     push_flash(&session, FlashMessage::success("Email deleted")).await;
 
@@ -307,7 +307,7 @@ pub async fn mark_unread(
     AuthenticatedClient(client, _, session): AuthenticatedClient,
     Path(id): Path<EmailId>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    info!("mark_unread: id={id}");
+    debug!("mark_unread: id={id}");
     jmap::mark_email_unread(&client, &id).await?;
     push_flash(&session, FlashMessage::success("Marked as unread")).await;
     Ok(Response::builder()
@@ -464,7 +464,7 @@ pub async fn reply(
     AuthenticatedClient(client, username, session): AuthenticatedClient,
     Path(id): Path<EmailId>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    info!("reply: id={id}");
+    debug!("reply: id={id}");
     compose_for_email(&client, &username, &session, &id, ComposeMode::Reply).await
 }
 
@@ -472,7 +472,7 @@ pub async fn reply_all(
     AuthenticatedClient(client, username, session): AuthenticatedClient,
     Path(id): Path<EmailId>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    info!("reply_all: id={id}");
+    debug!("reply_all: id={id}");
     compose_for_email(&client, &username, &session, &id, ComposeMode::ReplyAll).await
 }
 
@@ -480,7 +480,7 @@ pub async fn forward(
     AuthenticatedClient(client, username, session): AuthenticatedClient,
     Path(id): Path<EmailId>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    info!("forward: id={id}");
+    debug!("forward: id={id}");
     compose_for_email(&client, &username, &session, &id, ComposeMode::Forward).await
 }
 
@@ -488,9 +488,9 @@ pub async fn get_flash(
     flash: FlashMessages,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
     let messages = flash.into_messages();
-    info!("get_flash: returning {} flash messages", messages.len());
+    trace!("get_flash: returning {} flash messages", messages.len());
     for msg in &messages {
-        info!("get_flash: {:?} - {}", msg.kind, msg.message);
+        trace!("get_flash: {:?} - {}", msg.kind, msg.message);
     }
     Ok(HtmlTemplate::page(FlashToastTemplate { messages }))
 }
