@@ -51,7 +51,11 @@
                         </svg>
                     </span>
                 </button>
-                <el-menu anchor="bottom end" popover class="w-32 origin-top-right rounded-md bg-white py-2 shadow-lg outline outline-gray-900/5 transition transition-discrete [--anchor-gap:--spacing(2.5)] data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in">
+                <el-menu anchor="bottom end" popover class="w-44 origin-top-right rounded-md bg-white py-2 shadow-lg outline outline-gray-900/5 transition transition-discrete [--anchor-gap:--spacing(2.5)] data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in">
+                    <button type="button" command="show-modal" commandfor="shortcuts-dialog"
+                            class="block w-full px-3 py-1 text-left text-sm/6 text-gray-900 hover:bg-gray-50">
+                        Keyboard shortcuts
+                    </button>
                     <form action="/logout" method="POST">
                         <button type="submit" class="block w-full px-3 py-1 text-left text-sm/6 text-gray-900 hover:bg-gray-50">Sign out</button>
                     </form>

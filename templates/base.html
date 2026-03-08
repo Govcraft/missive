@@ -52,6 +52,108 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
         iframe.onload = function() { resizeEmailIframe(this); };
     });
 });
+document.addEventListener('keydown', function(e) {
+    var tag = e.target.tagName;
+    var isInput = (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable);
+    var composeForm = document.querySelector('#email-detail-pane form[hx-post*="send"], #email-detail-pane form[hx-post*="compose"]');
+    var dialog = document.getElementById('shortcuts-dialog');
+    var detailPane = document.getElementById('email-detail-pane');
+
+    // Compose mode: Ctrl+Enter to send, Escape to cancel
+    if (composeForm) {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            var sendBtn = composeForm.querySelector('button[type="submit"]');
+            if (sendBtn) sendBtn.click();
+            return;
+        }
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            var cancelBtn = composeForm.querySelector('a[href="#"], button[hx-get*="empty"], .cancel-compose');
+            if (cancelBtn) { cancelBtn.click(); return; }
+            if (detailPane) detailPane.replaceChildren();
+            return;
+        }
+    }
+
+    // Don't intercept typing in inputs (after compose-specific handling)
+    if (isInput) return;
+
+    var key = e.key;
+
+    // ? — toggle shortcuts modal
+    if (key === '?') {
+        e.preventDefault();
+        if (dialog) {
+            if (dialog.open) {
+                dialog.close();
+            } else {
+                dialog.showModal();
+            }
+        }
+        return;
+    }
+
+    // Escape — close modal or clear detail pane
+    if (key === 'Escape') {
+        if (dialog && dialog.open) return; // browser handles closing the dialog
+        if (detailPane) detailPane.replaceChildren();
+        return;
+    }
+
+    // / — focus search
+    if (key === '/') {
+        e.preventDefault();
+        var search = document.getElementById('search-input');
+        if (search) search.focus();
+        return;
+    }
+
+    // c — compose
+    if (key === 'c') {
+        var composeBtn = document.querySelector('button[hx-get*="compose"]');
+        if (composeBtn) composeBtn.click();
+        return;
+    }
+
+    // j/k — navigate email list
+    if (key === 'j' || key === 'k') {
+        var current = document.querySelector('.email-row.bg-blue-100');
+        var target;
+        if (current) {
+            target = key === 'j' ? current.nextElementSibling : current.previousElementSibling;
+            while (target && !target.classList.contains('email-row')) {
+                target = key === 'j' ? target.nextElementSibling : target.previousElementSibling;
+            }
+        } else {
+            var rows = document.querySelectorAll('.email-row');
+            if (rows.length > 0) {
+                target = key === 'j' ? rows[0] : rows[rows.length - 1];
+            }
+        }
+        if (target) target.click();
+        return;
+    }
+
+    // Action shortcuts — only when viewing an email (not composing)
+    if (!detailPane) return;
+    var hasActions = detailPane.querySelector('[title="Reply"], [title="Reply all"], [title="Forward"]');
+    if (!hasActions) return;
+
+    var actionMap = {
+        'r': 'Reply',
+        'a': 'Reply all',
+        'f': 'Forward',
+        'e': 'Archive',
+        '#': 'Delete',
+        'u': 'Mark as unread'
+    };
+    var actionTitle = actionMap[key];
+    if (actionTitle) {
+        var btn = detailPane.querySelector('[title="' + actionTitle + '"]');
+        if (btn) btn.click();
+    }
+});
 </script>
 </body>
 </html>
