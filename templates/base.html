@@ -146,6 +146,13 @@ document.addEventListener('keydown', function(e) {
         return;
     }
 
+    // ! — report spam
+    if (key === '!') {
+        var spamBtn = detailPane.querySelector('[title="Report spam"]');
+        if (spamBtn) spamBtn.click();
+        return;
+    }
+
     var actionMap = {
         'r': 'Reply',
         'a': 'Reply all',
