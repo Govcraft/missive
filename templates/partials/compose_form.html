@@ -72,7 +72,7 @@
                         hx-get="/api/v1/compose/cancel"
                         hx-target="#email-detail-pane"
                         hx-swap="innerHTML"
-                        class="relative inline-flex items-center rounded-l-md bg-white px-3 py-2 text-sm font-semibold text-brand-900 inset-ring-1 inset-ring-brand-300 hover:bg-brand-50 focus:z-10">
+                        class="relative inline-flex items-center rounded-l-md bg-white px-3 py-2 text-sm font-semibold text-brand-900 inset-ring-1 inset-ring-brand-300 hover:bg-brand-50 focus:z-10 transition-colors">
                         Cancel
                     </button>
                     <button type="button"
@@ -80,12 +80,12 @@
                         hx-target="#email-detail-pane"
                         hx-swap="innerHTML"
                         hx-include="#compose-form"
-                        class="relative -ml-px inline-flex items-center bg-white px-3 py-2 text-sm font-semibold text-brand-900 inset-ring-1 inset-ring-brand-300 hover:bg-brand-50 focus:z-10">
+                        class="relative -ml-px inline-flex items-center bg-white px-3 py-2 text-sm font-semibold text-brand-900 inset-ring-1 inset-ring-brand-300 hover:bg-brand-50 focus:z-10 transition-colors">
                         Save Draft
                     </button>
                     <button type="submit"
                         hx-post="/api/v1/send"
-                        class="relative -ml-px inline-flex items-center rounded-r-md bg-accent-600 px-3 py-2 text-sm font-semibold text-white inset-ring-1 inset-ring-accent-600 hover:bg-accent-500 focus:z-10">
+                        class="relative -ml-px inline-flex items-center rounded-r-md bg-accent-600 px-3 py-2 text-sm font-semibold text-white inset-ring-1 inset-ring-accent-600 hover:bg-accent-500 focus:z-10 transition-colors">
                         Send
                     </button>
                 </span>
