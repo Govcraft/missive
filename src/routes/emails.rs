@@ -563,6 +563,102 @@ pub async fn forward(
     compose_for_email(&client, &username, &session, &id, ComposeMode::Forward).await
 }
 
+#[derive(Deserialize)]
+pub struct BulkActionForm {
+    pub email_ids: String,
+    pub action: String,
+    pub mailbox_id: MailboxId,
+}
+
+pub async fn bulk_action(
+    AuthenticatedClient(client, _, session): AuthenticatedClient,
+    Form(form): Form<BulkActionForm>,
+) -> std::result::Result<impl IntoResponse, MissiveError> {
+    debug!(
+        "bulk_action: action={}, mailbox={}",
+        form.action, form.mailbox_id
+    );
+    let ids: Vec<EmailId> = form
+        .email_ids
+        .split(',')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(EmailId::from)
+        .collect();
+
+    if ids.is_empty() {
+        push_flash(&session, FlashMessage::error("No emails selected")).await;
+        return Ok(empty_state_with_flash());
+    }
+
+    let count = ids.len();
+    let flash_msg = match form.action.as_str() {
+        "delete" => {
+            let trash_id = jmap::find_mailbox_by_role(&client, "trash").await?;
+            if form.mailbox_id == trash_id {
+                jmap::bulk_delete_emails(&client, &ids).await?;
+                format!("{count} emails permanently deleted")
+            } else {
+                jmap::bulk_move_emails(&client, &ids, &form.mailbox_id, &trash_id).await?;
+                format!("{count} emails moved to trash")
+            }
+        }
+        "archive" => {
+            let archive_id = jmap::find_mailbox_by_role(&client, "archive").await?;
+            jmap::bulk_move_emails(&client, &ids, &form.mailbox_id, &archive_id).await?;
+            format!("{count} emails archived")
+        }
+        "spam" => {
+            let junk_id = jmap::find_mailbox_by_role(&client, "junk").await?;
+            jmap::bulk_move_emails(&client, &ids, &form.mailbox_id, &junk_id).await?;
+            format!("{count} emails marked as spam")
+        }
+        "read" => {
+            jmap::bulk_set_keyword(&client, &ids, "$seen", true).await?;
+            format!("{count} emails marked as read")
+        }
+        "unread" => {
+            jmap::bulk_set_keyword(&client, &ids, "$seen", false).await?;
+            format!("{count} emails marked as unread")
+        }
+        "flag" => {
+            jmap::bulk_set_keyword(&client, &ids, "$flagged", true).await?;
+            format!("{count} emails starred")
+        }
+        "unflag" => {
+            jmap::bulk_set_keyword(&client, &ids, "$flagged", false).await?;
+            format!("{count} emails unstarred")
+        }
+        _ => {
+            push_flash(&session, FlashMessage::error("Unknown action")).await;
+            return Ok(empty_state_with_flash());
+        }
+    };
+
+    push_flash(&session, FlashMessage::success(flash_msg)).await;
+
+    // Build OOB deletes for move/delete actions (not for keyword-only actions)
+    let oob_deletes: String = match form.action.as_str() {
+        "delete" | "archive" | "spam" => ids
+            .iter()
+            .map(|id| format!("<li id=\"email-row-{id}\" hx-swap-oob=\"delete\"></li>"))
+            .collect(),
+        _ => String::new(),
+    };
+
+    let html = format!(
+        "<div class=\"flex items-center justify-center h-full text-sm text-gray-400\">\
+            Select an email to read\
+         </div>{oob_deletes}"
+    );
+
+    Ok(Response::builder()
+        .header("Content-Type", "text/html")
+        .header("HX-Trigger", "flashUpdated, mailboxesUpdated")
+        .body(Body::from(html))?
+        .into_response())
+}
+
 pub async fn get_flash(
     flash: FlashMessages,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {

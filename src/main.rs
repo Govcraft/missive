@@ -62,6 +62,7 @@ async fn main() -> Result<()> {
             router
                 .route("/mailboxes", get(routes::mailboxes::list_mailboxes))
                 .route("/emails", get(routes::emails::list_emails))
+                .route("/emails/bulk", post(routes::emails::bulk_action))
                 .route("/emails/{id}", get(routes::emails::get_email).delete(routes::emails::delete_email))
                 .route("/emails/{id}/mark-unread", post(routes::emails::mark_unread))
                 .route("/emails/{id}/reply", get(routes::emails::reply))
