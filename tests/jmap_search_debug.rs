@@ -83,13 +83,7 @@ async fn search_and_print(client: &Client, mailbox_id: &str, term: &str) {
             .map(|addrs| {
                 addrs
                     .iter()
-                    .map(|a| {
-                        format!(
-                            "{} <{}>",
-                            a.name().unwrap_or(""),
-                            a.email()
-                        )
-                    })
+                    .map(|a| format!("{} <{}>", a.name().unwrap_or(""), a.email()))
                     .collect::<Vec<_>>()
                     .join(", ")
             })

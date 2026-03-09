@@ -1,0 +1,47 @@
+services:
+  traefik:
+    image: traefik:v3
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
+    restart: unless-stopped
+
+  missive:
+    build: .
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.missive.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.missive.entrypoints=websecure
+      - traefik.http.routers.missive.tls.certresolver=letsencrypt
+      - traefik.http.services.missive.loadbalancer.server.port=8080
+    environment:
+      - ACTON_JMAP_URL=${ACTON_JMAP_URL}
+      - ACTON_SERVICE_PORT=8080
+      - ACTON_SESSION_STORAGE=${ACTON_SESSION_STORAGE:-memory}
+      - ACTON_SESSION_REDIS_URL=${ACTON_SESSION_REDIS_URL:-}
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    profiles:
+      - redis
+
+volumes:
+  letsencrypt:
+  redis-data:

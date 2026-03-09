@@ -1,13 +1,13 @@
 use std::convert::Infallible;
 use std::sync::Arc;
 
-use acton_service::prelude::*;
-use futures_util::stream;
-use futures_util::StreamExt;
-use jmap_client::event_source::PushNotification;
-use jmap_client::DataType;
 use crate::error::{JmapErrorKind, MissiveError};
 use crate::session::AuthenticatedClient;
+use acton_service::prelude::*;
+use futures_util::StreamExt;
+use futures_util::stream;
+use jmap_client::DataType;
+use jmap_client::event_source::PushNotification;
 
 fn classify_push_notification(notification: &PushNotification) -> Vec<&'static str> {
     match notification {
@@ -71,7 +71,10 @@ pub async fn event_stream(
 
     // Send a test event to verify the full pipeline
     let connected_msg = BroadcastMessage::named("connected", "ok");
-    match broadcaster.broadcast_to_channel(&username, connected_msg).await {
+    match broadcaster
+        .broadcast_to_channel(&username, connected_msg)
+        .await
+    {
         Ok(n) => info!("SSE: sent connected event to {n} receiver(s) for {username}"),
         Err(e) => error!("SSE: failed to send connected event for {username}: {e}"),
     }
@@ -117,32 +120,35 @@ pub async fn event_stream(
     // The shutdown_tx is carried in the state so it drops when the stream ends.
     // A Ctrl+C listener ensures the stream terminates during graceful shutdown,
     // which drops shutdown_tx and signals the spawned JMAP task to exit.
-    let stream = stream::unfold((rx, Some(shutdown_tx)), |(mut rx, shutdown_tx)| async move {
-        loop {
-            tokio::select! {
-                result = rx.recv() => {
-                    match result {
-                        Ok(msg) => {
-                            let mut event = SseEvent::default().data(msg.data);
-                            if let Some(event_type) = msg.event_type {
-                                event = event.event(event_type);
+    let stream = stream::unfold(
+        (rx, Some(shutdown_tx)),
+        |(mut rx, shutdown_tx)| async move {
+            loop {
+                tokio::select! {
+                    result = rx.recv() => {
+                        match result {
+                            Ok(msg) => {
+                                let mut event = SseEvent::default().data(msg.data);
+                                if let Some(event_type) = msg.event_type {
+                                    event = event.event(event_type);
+                                }
+                                return Some((Ok(event), (rx, shutdown_tx)));
                             }
-                            return Some((Ok(event), (rx, shutdown_tx)));
+                            Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
+                                warn!("SSE: broadcast receiver lagged, skipped {n} message(s)");
+                                continue;
+                            }
+                            Err(tokio::sync::broadcast::error::RecvError::Closed) => return None,
                         }
-                        Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
-                            warn!("SSE: broadcast receiver lagged, skipped {n} message(s)");
-                            continue;
-                        }
-                        Err(tokio::sync::broadcast::error::RecvError::Closed) => return None,
+                    }
+                    _ = tokio::signal::ctrl_c() => {
+                        info!("SSE: shutdown signal received, closing SSE stream");
+                        return None;
                     }
                 }
-                _ = tokio::signal::ctrl_c() => {
-                    info!("SSE: shutdown signal received, closing SSE stream");
-                    return None;
-                }
             }
-        }
-    });
+        },
+    );
 
     Ok(Sse::new(stream).keep_alive(KeepAlive::default()))
 }

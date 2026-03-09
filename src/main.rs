@@ -4,12 +4,14 @@
 use std::sync::Arc;
 
 use acton_service::prelude::*;
-use acton_service::session::{SessionConfig, create_memory_session_layer};
+use acton_service::session::{
+    SessionManagerLayer, SessionStorage, create_memory_session_layer, create_redis_session_layer,
+};
 use axum::Extension;
-use tower_http::services::ServeDir;
 
 use crate::jmap::{JmapUrl, new_client_cache};
 
+mod assets;
 mod config;
 mod error;
 mod jmap;
@@ -23,8 +25,6 @@ use config::MissiveConfig;
 async fn main() -> Result<()> {
     info!("Missive v{}", env!("CARGO_PKG_VERSION"));
 
-    let session_config = SessionConfig::default();
-    let session_layer = create_memory_session_layer(&session_config);
     let client_cache = new_client_cache();
     let broadcaster = Arc::new(SseBroadcaster::new());
 
@@ -61,16 +61,63 @@ async fn main() -> Result<()> {
         return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, e.to_string()).into());
     }
 
-    let routes = VersionedApiBuilder::<MissiveConfig>::with_config()
+    let session_config = config.session.clone().unwrap_or_default();
+
+    let routes = match session_config.storage {
+        SessionStorage::Redis => {
+            let redis_url = session_config.redis_url.as_deref().ok_or_else(|| {
+                std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    "session.redis_url is required when session.storage = \"redis\"",
+                )
+            })?;
+            info!("Using Redis session backend");
+            let layer = create_redis_session_layer(&session_config, redis_url).await?;
+            build_routes(client_cache, broadcaster, layer)
+        }
+        SessionStorage::Memory => {
+            info!("Using in-memory session backend");
+            let layer = create_memory_session_layer(&session_config);
+            build_routes(client_cache, broadcaster, layer)
+        }
+    };
+
+    ServiceBuilder::<MissiveConfig>::new()
+        .with_config(config)
+        .with_routes(routes)
+        .build()
+        .serve()
+        .await
+}
+
+fn build_routes<S>(
+    client_cache: jmap::JmapClientCache,
+    broadcaster: Arc<SseBroadcaster>,
+    session_layer: SessionManagerLayer<S>,
+) -> VersionedRoutes<MissiveConfig>
+where
+    SessionManagerLayer<S>: Clone + Send + Sync + 'static,
+    S: tower_sessions_core::session_store::SessionStore + Clone + Send + Sync + 'static,
+{
+    VersionedApiBuilder::<MissiveConfig>::with_config()
         .with_base_path("/api")
         .add_version(ApiVersion::V1, |router| {
             router
                 .route("/mailboxes", get(routes::mailboxes::list_mailboxes))
                 .route("/emails", get(routes::emails::list_emails))
                 .route("/emails/bulk", post(routes::emails::bulk_action))
-                .route("/emails/{id}", get(routes::emails::get_email).delete(routes::emails::delete_email))
-                .route("/emails/{id}/mark-unread", post(routes::emails::mark_unread))
-                .route("/emails/{id}/toggle-flag", post(routes::emails::toggle_flag))
+                .route(
+                    "/emails/{id}",
+                    get(routes::emails::get_email).delete(routes::emails::delete_email),
+                )
+                .route(
+                    "/emails/{id}/mark-unread",
+                    post(routes::emails::mark_unread),
+                )
+                .route(
+                    "/emails/{id}/toggle-flag",
+                    post(routes::emails::toggle_flag),
+                )
                 .route("/emails/{id}/reply", get(routes::emails::reply))
                 .route("/emails/{id}/reply-all", get(routes::emails::reply_all))
                 .route("/emails/{id}/forward", get(routes::emails::forward))
@@ -104,16 +151,9 @@ async fn main() -> Result<()> {
                 .route("/inbox", get(routes::pages::inbox))
                 .route("/calendar", get(routes::pages::calendar))
                 .route("/contacts", get(routes::pages::contacts))
-                .nest_service("/static", ServeDir::new("static"))
+                .route("/static/{*path}", get(assets::serve_embedded))
                 .layer(Extension(client_cache))
                 .layer(session_layer)
         })
-        .build_routes();
-
-    ServiceBuilder::<MissiveConfig>::new()
-        .with_config(config)
-        .with_routes(routes)
-        .build()
-        .serve()
-        .await
+        .build_routes()
 }

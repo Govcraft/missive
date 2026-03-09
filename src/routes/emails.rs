@@ -7,7 +7,10 @@ use axum::extract::Multipart;
 
 use crate::config::MissiveConfig;
 use crate::error::{JmapErrorKind, MissiveError};
-use crate::jmap::{self, BlobId, EmailDetail, EmailId, EmailSummary, IdentityId, IdentityInfo, MailboxId, MailboxInfo, SearchQuery};
+use crate::jmap::{
+    self, BlobId, EmailDetail, EmailId, EmailSummary, IdentityId, IdentityInfo, MailboxId,
+    MailboxInfo, SearchQuery,
+};
 use crate::sanitize::sanitize_compose_html;
 use crate::session::AuthenticatedClient;
 
@@ -95,10 +98,19 @@ pub async fn list_emails(
     Query(params): Query<EmailListParams>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
     let search = params.search.as_deref().and_then(SearchQuery::new);
-    trace!("list_emails: mailbox_id={}, search={search:?}", params.mailbox_id);
+    trace!(
+        "list_emails: mailbox_id={}, search={search:?}",
+        params.mailbox_id
+    );
     let page_size = state.config().custom.page_size;
-    let (emails, total_count) =
-        jmap::fetch_emails(&client, &params.mailbox_id, params.position, page_size, search.as_ref()).await?;
+    let (emails, total_count) = jmap::fetch_emails(
+        &client,
+        &params.mailbox_id,
+        params.position,
+        page_size,
+        search.as_ref(),
+    )
+    .await?;
     trace!(
         "list_emails: returning {} emails at position {}",
         emails.len(),
@@ -172,18 +184,18 @@ fn empty_state_with_flash() -> Response {
         .into_response()
 }
 
-
-fn filter_identities_for_user(
-    identities: Vec<IdentityInfo>,
-    username: &str,
-) -> Vec<IdentityInfo> {
+fn filter_identities_for_user(identities: Vec<IdentityInfo>, username: &str) -> Vec<IdentityInfo> {
     let filtered: Vec<IdentityInfo> = identities
         .iter()
         .filter(|i| i.email == username)
         .cloned()
         .collect();
     // Fall back to all identities if none match the username exactly
-    if filtered.is_empty() { identities } else { filtered }
+    if filtered.is_empty() {
+        identities
+    } else {
+        filtered
+    }
 }
 
 pub async fn compose_form(
@@ -223,9 +235,13 @@ pub async fn send_email(
         Some(i) => i.email.clone(),
         None => {
             push_flash(&session, FlashMessage::error("Invalid sending identity")).await;
-            return Ok(HtmlTemplate::page(ComposeFormTemplate { identities, form, title: "New Message".to_string() })
-                .with_hx_trigger("flashUpdated")
-                .into_response());
+            return Ok(HtmlTemplate::page(ComposeFormTemplate {
+                identities,
+                form,
+                title: "New Message".to_string(),
+            })
+            .with_hx_trigger("flashUpdated")
+            .into_response());
         }
     };
 
@@ -274,9 +290,13 @@ pub async fn send_email(
         Err(e) => {
             error!("send_email failed: {e}");
             push_flash(&session, FlashMessage::error(e.to_string())).await;
-            Ok(HtmlTemplate::page(ComposeFormTemplate { identities, form, title: "New Message".to_string() })
-                .with_hx_trigger("flashUpdated")
-                .into_response())
+            Ok(HtmlTemplate::page(ComposeFormTemplate {
+                identities,
+                form,
+                title: "New Message".to_string(),
+            })
+            .with_hx_trigger("flashUpdated")
+            .into_response())
         }
     }
 }
@@ -299,10 +319,7 @@ pub async fn save_draft(
         references: Some(form.references_header.as_str()).filter(|s| !s.is_empty()),
     };
     let attachments = build_attachments_from_form(&form);
-    debug!(
-        "save_draft: {} attachment(s) from form",
-        attachments.len()
-    );
+    debug!("save_draft: {} attachment(s) from form", attachments.len());
     for att in &attachments {
         debug!(
             "save_draft: attachment blob_id={}, name={}, type={}",
@@ -329,9 +346,13 @@ pub async fn save_draft(
         Err(e) => {
             error!("save_draft failed: {e}");
             push_flash(&session, FlashMessage::error(e.to_string())).await;
-            Ok(HtmlTemplate::page(ComposeFormTemplate { identities, form, title: "New Message".to_string() })
-                .with_hx_trigger("flashUpdated")
-                .into_response())
+            Ok(HtmlTemplate::page(ComposeFormTemplate {
+                identities,
+                form,
+                title: "New Message".to_string(),
+            })
+            .with_hx_trigger("flashUpdated")
+            .into_response())
         }
     }
 }
@@ -500,7 +521,11 @@ pub async fn toggle_flag(
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
     trace!("toggle_flag: id={id}, flagged={}", params.flagged);
     jmap::toggle_email_flagged(&client, &id, params.flagged).await?;
-    let label = if params.flagged { "Starred" } else { "Unstarred" };
+    let label = if params.flagged {
+        "Starred"
+    } else {
+        "Unstarred"
+    };
     push_flash(&session, FlashMessage::success(label)).await;
     Ok(HtmlTemplate::page(StarButtonTemplate {
         email_id: id,
@@ -527,9 +552,7 @@ pub async fn mark_unread(
 fn prepend_subject_prefix(subject: &str, prefix: &str) -> String {
     let trimmed = subject.trim();
     let check = format!("{prefix}:");
-    if trimmed.len() >= check.len()
-        && trimmed[..check.len()].eq_ignore_ascii_case(&check)
-    {
+    if trimmed.len() >= check.len() && trimmed[..check.len()].eq_ignore_ascii_case(&check) {
         trimmed.to_string()
     } else {
         format!("{prefix}: {trimmed}")
@@ -537,7 +560,10 @@ fn prepend_subject_prefix(subject: &str, prefix: &str) -> String {
 }
 
 fn quote_body(body: &str) -> String {
-    body.lines().map(|line| format!("> {line}")).collect::<Vec<_>>().join("\n")
+    body.lines()
+        .map(|line| format!("> {line}"))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 fn build_reply_references(original_refs: &[String], original_msg_id: &[String]) -> String {
@@ -626,10 +652,7 @@ pub async fn upload_attachment(
             message: e.to_string(),
         })
     })? {
-        let name = field
-            .file_name()
-            .unwrap_or("attachment")
-            .to_string();
+        let name = field.file_name().unwrap_or("attachment").to_string();
         let content_type = field
             .content_type()
             .unwrap_or("application/octet-stream")
@@ -693,17 +716,18 @@ async fn compose_for_email(
     let (title, form) = match mode {
         ComposeMode::Reply => {
             let in_reply_to = email.message_id.first().cloned().unwrap_or_default();
-            let references_header =
-                build_reply_references(&email.references, &email.message_id);
+            let references_header = build_reply_references(&email.references, &email.message_id);
             let quoted = format!(
                 "\n\nOn {}, {} wrote:\n{}",
                 email.received_at,
                 email.from,
                 quote_body(&email.body_text)
             );
-            let body_html = email.body_html.as_deref().map(|html| {
-                quote_body_html(html, &email.from, &email.received_at)
-            }).unwrap_or_default();
+            let body_html = email
+                .body_html
+                .as_deref()
+                .map(|html| quote_body_html(html, &email.from, &email.received_at))
+                .unwrap_or_default();
             (
                 "Reply".to_string(),
                 ComposeFormData {
@@ -719,17 +743,18 @@ async fn compose_for_email(
         }
         ComposeMode::ReplyAll => {
             let in_reply_to = email.message_id.first().cloned().unwrap_or_default();
-            let references_header =
-                build_reply_references(&email.references, &email.message_id);
+            let references_header = build_reply_references(&email.references, &email.message_id);
             let quoted = format!(
                 "\n\nOn {}, {} wrote:\n{}",
                 email.received_at,
                 email.from,
                 quote_body(&email.body_text)
             );
-            let body_html = email.body_html.as_deref().map(|html| {
-                quote_body_html(html, &email.from, &email.received_at)
-            }).unwrap_or_default();
+            let body_html = email
+                .body_html
+                .as_deref()
+                .map(|html| quote_body_html(html, &email.from, &email.received_at))
+                .unwrap_or_default();
             let all_recipients = if email.cc_emails.is_empty() {
                 email.to_emails.clone()
             } else {
@@ -1019,10 +1044,7 @@ mod tests {
 
     #[test]
     fn remove_address_empty_result() {
-        assert_eq!(
-            remove_address("alice@example.com", "alice@example.com"),
-            ""
-        );
+        assert_eq!(remove_address("alice@example.com", "alice@example.com"), "");
     }
 
     // --- format_forwarded_body ---
@@ -1134,8 +1156,8 @@ mod tests {
         let json = r#"[{"blob_id":"blob-1","name":"file1.pdf","content_type":"application/pdf"},{"blob_id":"blob-2","name":"file2.png","content_type":"image/png"}]"#;
         let encoded_json = serde_urlencoded::to_string([("attachments_json", json)]).unwrap();
         let form_data = format!("to=test%40example.com&subject=Hello&{encoded_json}");
-        let form: ComposeFormData = serde_urlencoded::from_str(&form_data)
-            .expect("deserialization should succeed");
+        let form: ComposeFormData =
+            serde_urlencoded::from_str(&form_data).expect("deserialization should succeed");
         let attachments = build_attachments_from_form(&form);
         assert_eq!(attachments.len(), 2);
         assert_eq!(attachments[0].blob_id.as_str(), "blob-1");
@@ -1147,8 +1169,8 @@ mod tests {
     #[test]
     fn compose_form_data_deserializes_no_attachments() {
         let form_data = "to=test%40example.com&subject=Hello";
-        let form: ComposeFormData = serde_urlencoded::from_str(form_data)
-            .expect("deserialization should succeed");
+        let form: ComposeFormData =
+            serde_urlencoded::from_str(form_data).expect("deserialization should succeed");
         assert!(form.attachments_json.is_empty());
         let attachments = build_attachments_from_form(&form);
         assert!(attachments.is_empty());

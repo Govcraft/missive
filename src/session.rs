@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use acton_service::prelude::*;
+use acton_service::session::Session;
 use axum::Extension;
 use axum::extract::FromRequestParts;
 use jmap_client::client::Client;
-use acton_service::session::Session;
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::config::MissiveConfig;

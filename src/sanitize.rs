@@ -109,7 +109,15 @@ pub fn sanitize_email_html(raw_html: &str, cid_map: &HashMap<String, String>) ->
 pub fn sanitize_compose_html(html: &str) -> String {
     Builder::new()
         .add_tags([
-            "div", "span", "br", "hr", "img", "pre", "code", "blockquote", "figure",
+            "div",
+            "span",
+            "br",
+            "hr",
+            "img",
+            "pre",
+            "code",
+            "blockquote",
+            "figure",
             "figcaption",
         ])
         .add_tag_attributes("img", &["src", "alt", "width", "height"])

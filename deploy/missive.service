@@ -1,0 +1,21 @@
+[Unit]
+Description=Missive Email Client
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=missive
+Group=missive
+WorkingDirectory=/opt/missive
+ExecStart=/opt/missive/missive
+Restart=on-failure
+RestartSec=5
+EnvironmentFile=-/opt/missive/.env
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/missive
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

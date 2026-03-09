@@ -4,7 +4,7 @@ version = "0.2.0"
 edition = "2024"
 
 [dependencies]
-acton-service = { version = "0.16.0", features = ["htmx-full"] }
+acton-service = { version = "0.16.0", features = ["htmx-full", "session-redis"] }
 ammonia = "4.1.2"
 askama = "0.15.4"
 axum = { version = "0.8.8", features = ["multipart"] }
@@ -13,11 +13,12 @@ dashmap = "6.1.0"
 futures-util = "0.3.32"
 html2text = "0.16.7"
 jmap-client = "0.4.0"
+rust-embed = { version = "8.11.0", features = ["mime-guess"] }
 secrecy = { version = "0.10.3", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 toml = "1.0.6"
-tower-http = { version = "0.6.8", features = ["fs"] }
+tower-sessions-core = "0.14.0"
 
 [dev-dependencies]
 dotenvy = "0.15.7"

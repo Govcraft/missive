@@ -5,11 +5,11 @@ use acton_service::prelude::{debug, error, info, trace};
 use chrono::{DateTime, Local};
 use dashmap::DashMap;
 use jmap_client::{
+    Set,
     client::Client,
     email::{self, Email, EmailAddress, EmailBodyPart},
     identity,
     mailbox::{self, Role},
-    Set,
 };
 
 use serde::{Deserialize, Serialize};
@@ -48,10 +48,9 @@ fn build_email_filter(
 ) -> jmap_client::core::query::Filter<email::query::Filter> {
     let mailbox = email::query::Filter::in_mailbox(mailbox_id.as_str());
     match search {
-        Some(q) => jmap_client::core::query::Filter::and([
-            mailbox,
-            email::query::Filter::text(q.as_ref()),
-        ]),
+        Some(q) => {
+            jmap_client::core::query::Filter::and([mailbox, email::query::Filter::text(q.as_ref())])
+        }
         None => mailbox.into(),
     }
 }
@@ -332,7 +331,9 @@ pub async fn fetch_emails(
     limit: usize,
     search: Option<&SearchQuery>,
 ) -> Result<(Vec<EmailSummary>, Option<usize>), MissiveError> {
-    trace!("Fetching emails: mailbox_id={mailbox_id}, position={position}, limit={limit}, search={search:?}");
+    trace!(
+        "Fetching emails: mailbox_id={mailbox_id}, position={position}, limit={limit}, search={search:?}"
+    );
     let mut request = client.build();
     let query_req = request.query_email();
     query_req.filter(build_email_filter(mailbox_id, search));
@@ -429,15 +430,12 @@ pub async fn fetch_email_detail(
         })
     })?;
 
-    let email = response
-        .list()
-        .first()
-        .ok_or_else(|| {
-            MissiveError::Jmap(JmapErrorKind::NotFound {
-                resource: "Email".to_string(),
-                id: email_id.to_string(),
-            })
-        })?;
+    let email = response.list().first().ok_or_else(|| {
+        MissiveError::Jmap(JmapErrorKind::NotFound {
+            resource: "Email".to_string(),
+            id: email_id.to_string(),
+        })
+    })?;
 
     let body_text = extract_text_body(email);
     let cid_map = build_cid_map(email);
@@ -601,8 +599,8 @@ fn build_attachment_body_part(att: &UploadedAttachment) -> EmailBodyPart {
 fn set_email_body(email: &mut Email<Set>, body_text: &str, body_html: Option<&str>) {
     match body_html {
         Some(html) => {
-            let plain = html2text::from_read(html.as_bytes(), 78)
-                .unwrap_or_else(|_| body_text.to_string());
+            let plain =
+                html2text::from_read(html.as_bytes(), 78).unwrap_or_else(|_| body_text.to_string());
             email
                 .body_value("text_body".to_string(), plain.as_str())
                 .text_body(
@@ -618,13 +616,11 @@ fn set_email_body(email: &mut Email<Set>, body_text: &str, body_html: Option<&st
                 );
         }
         None => {
-            email
-                .body_value("body".to_string(), body_text)
-                .text_body(
-                    EmailBodyPart::new()
-                        .content_type("text/plain")
-                        .part_id("body"),
-                );
+            email.body_value("body".to_string(), body_text).text_body(
+                EmailBodyPart::new()
+                    .content_type("text/plain")
+                    .part_id("body"),
+            );
         }
     }
 }
@@ -644,10 +640,7 @@ fn parse_address_list(input: &str) -> Vec<EmailAddress> {
         .collect()
 }
 
-pub async fn save_draft(
-    client: &Client,
-    content: &EmailContent<'_>,
-) -> Result<(), MissiveError> {
+pub async fn save_draft(client: &Client, content: &EmailContent<'_>) -> Result<(), MissiveError> {
     let mailboxes = fetch_mailboxes(client).await?;
     let drafts_id = mailboxes
         .iter()
@@ -796,13 +789,11 @@ pub async fn send_email(
         })
     })?;
 
-    let created_email = response
-        .created("c0")
-        .map_err(|e| {
-            MissiveError::Jmap(JmapErrorKind::SubmissionFailed {
-                message: e.to_string(),
-            })
-        })?;
+    let created_email = response.created("c0").map_err(|e| {
+        MissiveError::Jmap(JmapErrorKind::SubmissionFailed {
+            message: e.to_string(),
+        })
+    })?;
     let email_id = created_email
         .id()
         .ok_or_else(|| {
@@ -895,7 +886,11 @@ pub async fn mark_email_unread(client: &Client, email_id: &EmailId) -> Result<()
     Ok(())
 }
 
-pub async fn toggle_email_flagged(client: &Client, email_id: &EmailId, flagged: bool) -> Result<(), MissiveError> {
+pub async fn toggle_email_flagged(
+    client: &Client,
+    email_id: &EmailId,
+    flagged: bool,
+) -> Result<(), MissiveError> {
     let mut request = client.build();
     request
         .set_email()
@@ -933,10 +928,7 @@ pub async fn delete_email(client: &Client, email_id: &EmailId) -> Result<(), Mis
     Ok(())
 }
 
-pub async fn find_mailbox_by_role(
-    client: &Client,
-    role: &str,
-) -> Result<MailboxId, MissiveError> {
+pub async fn find_mailbox_by_role(client: &Client, role: &str) -> Result<MailboxId, MissiveError> {
     let mailboxes = fetch_mailboxes(client).await?;
     mailboxes
         .iter()
@@ -1498,10 +1490,7 @@ mod tests {
     #[test]
     fn jmap_url_parse_missing_host() {
         let err = JmapUrl::parse("https://").unwrap_err();
-        assert_eq!(
-            err.to_string(),
-            "invalid JMAP URL: URL must include a host"
-        );
+        assert_eq!(err.to_string(), "invalid JMAP URL: URL must include a host");
     }
 
     #[test]
