@@ -11,11 +11,11 @@
 {% endif %}
 {% else %}
 {% if let Some(total) = total_count %}
-<div class="px-4 py-2 text-xs text-brand-400 sm:px-6">
+<div class="px-4 py-2 text-xs text-brand-400">
     {{ total }} {% if *total == 1 %}email{% else %}emails{% endif %}
 </div>
 {% endif %}
-<div class="flex items-center gap-2 px-4 py-1 border-b border-brand-100 sm:px-6">
+<div class="flex items-center gap-2 px-4 py-1 border-b border-brand-100">
     <input type="checkbox" id="select-all-checkbox"
            class="h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
            onchange="document.querySelectorAll('.bulk-checkbox').forEach(function(cb) { cb.checked = this.checked; }.bind(this)); document.body.dispatchEvent(new Event('bulkSelectionChanged'));" />
@@ -23,8 +23,8 @@
 </div>
 <ul role="list" class="divide-y divide-brand-200">
 {% for email in emails %}
-    <li id="email-row-{{ email.id }}" class="flex items-start">
-        <div class="flex items-center pl-4 pt-4 sm:pl-6">
+    <li id="email-row-{{ email.id }}" class="flex items-start min-w-0 overflow-hidden{% if email.is_unread %} bg-brand-50/50{% else %} bg-white{% endif %}">
+        <div class="flex items-center shrink-0 pl-4 pt-4">
             <input type="checkbox" class="bulk-checkbox h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
                    value="{{ email.id }}"
                    onchange="document.body.dispatchEvent(new Event('bulkSelectionChanged'));" />
@@ -33,10 +33,10 @@
            hx-get="/api/v1/emails/{{ email.id }}"
            hx-target="#email-detail-pane"
            hx-swap="innerHTML"
-           class="email-row flex-1 block px-4 py-4 hover:bg-brand-50 cursor-pointer transition-colors sm:pr-6{% if email.is_unread %} bg-white{% else %} bg-brand-50/50{% endif %}"
+           class="email-row flex-1 min-w-0 block px-4 py-4 hover:bg-brand-50 cursor-pointer transition-colors"
            onclick="document.querySelectorAll('.email-row').forEach(el => el.classList.remove('bg-brand-100')); this.classList.add('bg-brand-100');">
-            <div class="flex items-baseline justify-between mb-1">
-                <span class="text-sm truncate max-w-[200px]{% if email.is_unread %} font-semibold text-brand-900{% else %} text-brand-600{% endif %}">
+            <div class="flex items-baseline justify-between mb-1 min-w-0">
+                <span class="text-sm truncate min-w-0{% if email.is_unread %} font-semibold text-brand-900{% else %} text-brand-600{% endif %}">
                     {{ email.from }}
                 </span>
                 <span class="flex items-center gap-1 ml-2 whitespace-nowrap">
