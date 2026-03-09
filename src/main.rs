@@ -21,6 +21,8 @@ use config::MissiveConfig;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    info!("Missive v{}", env!("CARGO_PKG_VERSION"));
+
     let session_config = SessionConfig::default();
     let session_layer = create_memory_session_layer(&session_config);
     let client_cache = new_client_cache();

@@ -9,22 +9,23 @@ use jmap_client::DataType;
 use crate::error::{JmapErrorKind, MissiveError};
 use crate::session::AuthenticatedClient;
 
-fn classify_push_notification(notification: &PushNotification) -> Option<&'static str> {
+fn classify_push_notification(notification: &PushNotification) -> Vec<&'static str> {
     match notification {
         PushNotification::StateChange(changes) => {
             let has_email =
                 changes.has_type(DataType::Email) || changes.has_type(DataType::EmailDelivery);
             let has_mailbox = changes.has_type(DataType::Mailbox);
 
+            let mut events = Vec::new();
             if has_email {
-                Some("emailsUpdated")
-            } else if has_mailbox {
-                Some("mailboxesUpdated")
-            } else {
-                None
+                events.push("emailsUpdated");
             }
+            if has_mailbox {
+                events.push("mailboxesUpdated");
+            }
+            events
         }
-        _ => None,
+        _ => Vec::new(),
     }
 }
 
@@ -68,6 +69,13 @@ pub async fn event_stream(
     // disconnect or graceful shutdown), the sender drops, signaling the task.
     let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
 
+    // Send a test event to verify the full pipeline
+    let connected_msg = BroadcastMessage::named("connected", "ok");
+    match broadcaster.broadcast_to_channel(&username, connected_msg).await {
+        Ok(n) => info!("SSE: sent connected event to {n} receiver(s) for {username}"),
+        Err(e) => error!("SSE: failed to send connected event for {username}: {e}"),
+    }
+
     // Spawn a task that bridges JMAP EventSource → SseBroadcaster channel
     let bc = broadcaster.clone();
     let user = username.clone();
@@ -80,10 +88,13 @@ pub async fn event_stream(
                     match event {
                         Some(Ok(ref notification)) => {
                             debug!("SSE: raw JMAP event for {user}: {notification:?}");
-                            if let Some(event_name) = classify_push_notification(notification) {
+                            for event_name in classify_push_notification(notification) {
                                 info!("SSE: emitting {event_name} for {user}");
-                                let msg = BroadcastMessage::named(event_name, "");
-                                let _ = bc.broadcast_to_channel(&user, msg).await;
+                                let msg = BroadcastMessage::named(event_name, "refresh");
+                                match bc.broadcast_to_channel(&user, msg).await {
+                                    Ok(n) => info!("SSE: broadcast delivered to {n} receiver(s) for {user}"),
+                                    Err(e) => error!("SSE: broadcast send error for {user}: {e}"),
+                                }
                             }
                         }
                         Some(Err(e)) => {
@@ -105,15 +116,21 @@ pub async fn event_stream(
     // Convert broadcast receiver into SSE stream using unfold (per the docs).
     // The shutdown_tx is carried in the state so it drops when the stream ends.
     let stream = stream::unfold((rx, Some(shutdown_tx)), |(mut rx, shutdown_tx)| async move {
-        match rx.recv().await {
-            Ok(msg) => {
-                let mut event = SseEvent::default().data(msg.data);
-                if let Some(event_type) = msg.event_type {
-                    event = event.event(event_type);
+        loop {
+            match rx.recv().await {
+                Ok(msg) => {
+                    let mut event = SseEvent::default().data(msg.data);
+                    if let Some(event_type) = msg.event_type {
+                        event = event.event(event_type);
+                    }
+                    return Some((Ok(event), (rx, shutdown_tx)));
                 }
-                Some((Ok(event), (rx, shutdown_tx)))
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
+                    warn!("SSE: broadcast receiver lagged, skipped {n} message(s)");
+                    continue;
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Closed) => return None,
             }
-            Err(_) => None,
         }
     });
 
@@ -147,7 +164,7 @@ mod tests {
         let notification = make_state_change(&[DataType::Email]);
         assert_eq!(
             classify_push_notification(&notification),
-            Some("emailsUpdated")
+            vec!["emailsUpdated"]
         );
     }
 
@@ -156,7 +173,7 @@ mod tests {
         let notification = make_state_change(&[DataType::EmailDelivery]);
         assert_eq!(
             classify_push_notification(&notification),
-            Some("emailsUpdated")
+            vec!["emailsUpdated"]
         );
     }
 
@@ -165,29 +182,29 @@ mod tests {
         let notification = make_state_change(&[DataType::Mailbox]);
         assert_eq!(
             classify_push_notification(&notification),
-            Some("mailboxesUpdated")
+            vec!["mailboxesUpdated"]
         );
     }
 
     #[test]
-    fn classify_email_and_mailbox_prefers_email() {
+    fn classify_email_and_mailbox_emits_both() {
         let notification = make_state_change(&[DataType::Email, DataType::Mailbox]);
-        assert_eq!(
-            classify_push_notification(&notification),
-            Some("emailsUpdated")
-        );
+        let events = classify_push_notification(&notification);
+        assert!(events.contains(&"emailsUpdated"));
+        assert!(events.contains(&"mailboxesUpdated"));
+        assert_eq!(events.len(), 2);
     }
 
     #[test]
-    fn classify_unrelated_type_returns_none() {
+    fn classify_unrelated_type_returns_empty() {
         let notification = make_state_change(&[DataType::Identity]);
-        assert_eq!(classify_push_notification(&notification), None);
+        assert!(classify_push_notification(&notification).is_empty());
     }
 
     #[test]
-    fn classify_empty_state_change_returns_none() {
+    fn classify_empty_state_change_returns_empty() {
         let notification = make_state_change(&[]);
-        assert_eq!(classify_push_notification(&notification), None);
+        assert!(classify_push_notification(&notification).is_empty());
     }
 
     #[tokio::test]
