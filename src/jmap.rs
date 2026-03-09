@@ -478,7 +478,7 @@ pub async fn fetch_email_detail(
     })
 }
 
-fn format_file_size(bytes: usize) -> String {
+pub fn format_file_size(bytes: usize) -> String {
     if bytes < 1024 {
         format!("{bytes} B")
     } else if bytes < 1024 * 1024 {
@@ -497,6 +497,31 @@ pub async fn download_blob(client: &Client, blob_id: &BlobId) -> Result<Vec<u8>,
             message: e.to_string(),
         })
     })
+}
+
+#[derive(Debug, Clone)]
+pub struct UploadedAttachment {
+    pub blob_id: BlobId,
+    pub name: String,
+    pub content_type: String,
+}
+
+pub async fn upload_blob(
+    client: &Client,
+    data: Vec<u8>,
+    content_type: Option<&str>,
+) -> Result<BlobId, MissiveError> {
+    debug!("Uploading blob: {} bytes", data.len());
+    let response = client.upload(None, data, content_type).await.map_err(|e| {
+        error!("JMAP blob upload error: {e}");
+        MissiveError::Jmap(JmapErrorKind::QueryFailed {
+            method: "blob/upload".to_string(),
+            message: e.to_string(),
+        })
+    })?;
+    let blob_id = BlobId::from(response.blob_id());
+    info!("Blob uploaded successfully: id={blob_id}");
+    Ok(blob_id)
 }
 
 pub async fn fetch_identities(client: &Client) -> Result<Vec<IdentityInfo>, MissiveError> {
@@ -544,6 +569,7 @@ pub struct EmailContent<'a> {
     pub subject: &'a str,
     pub body_text: &'a str,
     pub threading: &'a ThreadingHeaders<'a>,
+    pub attachments: Vec<UploadedAttachment>,
 }
 
 fn parse_recipient_emails(input: &str) -> Vec<&str> {
@@ -612,6 +638,15 @@ pub async fn save_draft(
     if let Some(refs) = content.threading.references.filter(|s| !s.is_empty()) {
         let ids: Vec<String> = refs.split_whitespace().map(String::from).collect();
         email.references(ids);
+    }
+
+    for att in &content.attachments {
+        email.attachment(
+            EmailBodyPart::new()
+                .blob_id(att.blob_id.to_string())
+                .name(&att.name)
+                .content_type(&att.content_type),
+        );
     }
 
     request.send_set_email().await.map_err(|e| {
@@ -689,6 +724,15 @@ pub async fn send_email(
     if let Some(refs) = content.threading.references.filter(|s| !s.is_empty()) {
         let ids: Vec<String> = refs.split_whitespace().map(String::from).collect();
         email.references(ids);
+    }
+
+    for att in &content.attachments {
+        email.attachment(
+            EmailBodyPart::new()
+                .blob_id(att.blob_id.to_string())
+                .name(&att.name)
+                .content_type(&att.content_type),
+        );
     }
 
     let mut response = request.send_set_email().await.map_err(|e| {

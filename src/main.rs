@@ -78,6 +78,7 @@ async fn main() -> Result<()> {
                 )
                 .route("/compose", get(routes::emails::compose_form))
                 .route("/compose/cancel", get(routes::emails::compose_cancel))
+                .route("/compose/upload", post(routes::emails::upload_attachment))
                 .route("/send", post(routes::emails::send_email))
                 .route("/drafts", post(routes::emails::save_draft))
                 .route("/flash", get(routes::emails::get_flash))

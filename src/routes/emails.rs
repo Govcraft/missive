@@ -3,9 +3,10 @@ use std::sync::Arc;
 use acton_service::prelude::*;
 use acton_service::session::{FlashMessage, FlashMessages, Session};
 use axum::body::Body;
+use axum::extract::Multipart;
 
 use crate::config::MissiveConfig;
-use crate::error::MissiveError;
+use crate::error::{JmapErrorKind, MissiveError};
 use crate::jmap::{self, BlobId, EmailDetail, EmailId, EmailSummary, IdentityId, IdentityInfo, MailboxId, MailboxInfo, SearchQuery};
 use crate::session::AuthenticatedClient;
 
@@ -50,6 +51,15 @@ struct FlashToastTemplate {
 }
 
 #[derive(Template)]
+#[template(path = "partials/attachment_row.html")]
+struct AttachmentRowTemplate {
+    blob_id: BlobId,
+    name: String,
+    content_type: String,
+    size_display: String,
+}
+
+#[derive(Template)]
 #[template(path = "partials/empty_state.html")]
 struct EmptyStateTemplate;
 
@@ -71,6 +81,12 @@ pub struct ComposeFormData {
     pub in_reply_to: String,
     #[serde(default)]
     pub references_header: String,
+    #[serde(default)]
+    pub attachment_blob_ids: Vec<String>,
+    #[serde(default)]
+    pub attachment_names: Vec<String>,
+    #[serde(default)]
+    pub attachment_types: Vec<String>,
 }
 
 pub async fn list_emails(
@@ -217,6 +233,7 @@ pub async fn send_email(
         in_reply_to: Some(form.in_reply_to.as_str()).filter(|s| !s.is_empty()),
         references: Some(form.references_header.as_str()).filter(|s| !s.is_empty()),
     };
+    let attachments = build_attachments_from_form(&form);
     let content = jmap::EmailContent {
         from_email: &from_email,
         to: &form.to,
@@ -225,6 +242,7 @@ pub async fn send_email(
         subject: &form.subject,
         body_text: &form.body,
         threading: &threading,
+        attachments,
     };
     match jmap::send_email(
         &client,
@@ -264,6 +282,7 @@ pub async fn save_draft(
         in_reply_to: Some(form.in_reply_to.as_str()).filter(|s| !s.is_empty()),
         references: Some(form.references_header.as_str()).filter(|s| !s.is_empty()),
     };
+    let attachments = build_attachments_from_form(&form);
     let content = jmap::EmailContent {
         from_email,
         to: &form.to,
@@ -272,6 +291,7 @@ pub async fn save_draft(
         subject: &form.subject,
         body_text: &form.body,
         threading: &threading,
+        attachments,
     };
     match jmap::save_draft(&client, &content).await {
         Ok(()) => {
@@ -517,6 +537,71 @@ fn format_forwarded_body(email: &EmailDetail) -> String {
         "\n\n---------- Forwarded message ----------\nFrom: {}\nDate: {}\nSubject: {}\nTo: {}\n\n{}",
         email.from, email.received_at, email.subject, email.to, email.body_text
     )
+}
+
+fn build_attachments_from_form(form: &ComposeFormData) -> Vec<jmap::UploadedAttachment> {
+    form.attachment_blob_ids
+        .iter()
+        .enumerate()
+        .map(|(i, blob_id)| jmap::UploadedAttachment {
+            blob_id: BlobId::from(blob_id.as_str()),
+            name: form
+                .attachment_names
+                .get(i)
+                .cloned()
+                .unwrap_or_default(),
+            content_type: form
+                .attachment_types
+                .get(i)
+                .cloned()
+                .unwrap_or_else(|| "application/octet-stream".to_string()),
+        })
+        .collect()
+}
+
+pub async fn upload_attachment(
+    AuthenticatedClient(client, _, _): AuthenticatedClient,
+    mut multipart: Multipart,
+) -> std::result::Result<impl IntoResponse, MissiveError> {
+    if let Some(field) = multipart.next_field().await.map_err(|e| {
+        MissiveError::Jmap(JmapErrorKind::QueryFailed {
+            method: "multipart".to_string(),
+            message: e.to_string(),
+        })
+    })? {
+        let name = field
+            .file_name()
+            .unwrap_or("attachment")
+            .to_string();
+        let content_type = field
+            .content_type()
+            .unwrap_or("application/octet-stream")
+            .to_string();
+        let data = field.bytes().await.map_err(|e| {
+            MissiveError::Jmap(JmapErrorKind::QueryFailed {
+                method: "multipart".to_string(),
+                message: e.to_string(),
+            })
+        })?;
+
+        let size = data.len();
+        let blob_id = jmap::upload_blob(&client, data.to_vec(), Some(&content_type)).await?;
+
+        Ok(HtmlTemplate::page(AttachmentRowTemplate {
+            blob_id,
+            name,
+            content_type,
+            size_display: jmap::format_file_size(size),
+        })
+        .into_response())
+    } else {
+        Ok(Response::builder()
+            .status(400)
+            .header("Content-Type", "text/plain")
+            .body(Body::from("No file uploaded"))
+            .map_err(|e| MissiveError::HttpResponse(e.to_string()))?
+            .into_response())
+    }
 }
 
 pub async fn compose_cancel() -> std::result::Result<impl IntoResponse, MissiveError> {
