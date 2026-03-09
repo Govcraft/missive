@@ -116,6 +116,19 @@ document.addEventListener('keydown', function(e) {
         return;
     }
 
+    // x — toggle checkbox on current/highlighted email row
+    if (key === 'x') {
+        var current = document.querySelector('.email-row.bg-blue-100');
+        if (current) {
+            var checkbox = current.closest('li').querySelector('.bulk-checkbox');
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                document.body.dispatchEvent(new Event('bulkSelectionChanged'));
+            }
+        }
+        return;
+    }
+
     // j/k — navigate email list
     if (key === 'j' || key === 'k') {
         var current = document.querySelector('.email-row.bg-blue-100');
@@ -165,6 +178,35 @@ document.addEventListener('keydown', function(e) {
     if (actionTitle) {
         var btn = detailPane.querySelector('[title="' + actionTitle + '"]');
         if (btn) btn.click();
+    }
+});
+// Bulk selection management
+document.body.addEventListener('bulkSelectionChanged', function() {
+    var checked = document.querySelectorAll('.bulk-checkbox:checked');
+    var bar = document.getElementById('bulk-actions-bar');
+    var countEl = document.getElementById('bulk-count');
+    var idsInput = document.getElementById('bulk-email-ids');
+    var mailboxInput = document.getElementById('bulk-mailbox-id');
+    var activeMailbox = document.getElementById('active-mailbox-id');
+
+    if (!bar) return;
+
+    if (checked.length > 0) {
+        bar.classList.remove('hidden');
+        countEl.textContent = checked.length + ' selected';
+        var ids = Array.from(checked).map(function(cb) { return cb.value; }).join(',');
+        idsInput.value = ids;
+        if (activeMailbox) mailboxInput.value = activeMailbox.value;
+    } else {
+        bar.classList.add('hidden');
+    }
+});
+
+// Clear bulk selection when email list is refreshed
+document.body.addEventListener('htmx:afterSwap', function(event) {
+    if (event.detail.target.id === 'email-list-pane') {
+        var bar = document.getElementById('bulk-actions-bar');
+        if (bar) bar.classList.add('hidden');
     }
 });
 </script>

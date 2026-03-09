@@ -920,6 +920,83 @@ pub async fn move_email(
     Ok(())
 }
 
+pub async fn bulk_move_emails(
+    client: &Client,
+    email_ids: &[EmailId],
+    from_mailbox_id: &MailboxId,
+    to_mailbox_id: &MailboxId,
+) -> Result<(), MissiveError> {
+    debug!(
+        "Bulk moving {} emails from {from_mailbox_id} to {to_mailbox_id}",
+        email_ids.len()
+    );
+    let mut request = client.build();
+    let set_req = request.set_email();
+    for id in email_ids {
+        set_req
+            .update(id.as_str())
+            .mailbox_id(from_mailbox_id.as_str(), false)
+            .mailbox_id(to_mailbox_id.as_str(), true);
+    }
+    request.send_set_email().await.map_err(|e| {
+        error!("JMAP bulk move error: {e}");
+        MissiveError::Jmap(JmapErrorKind::QueryFailed {
+            method: "Email/set".to_string(),
+            message: e.to_string(),
+        })
+    })?;
+    info!("Bulk moved {} emails successfully", email_ids.len());
+    Ok(())
+}
+
+pub async fn bulk_delete_emails(
+    client: &Client,
+    email_ids: &[EmailId],
+) -> Result<(), MissiveError> {
+    debug!("Bulk deleting {} emails", email_ids.len());
+    let ids: Vec<&str> = email_ids.iter().map(|id| id.as_str()).collect();
+    let mut request = client.build();
+    request.set_email().destroy(ids);
+    request.send_set_email().await.map_err(|e| {
+        error!("JMAP bulk delete error: {e}");
+        MissiveError::Jmap(JmapErrorKind::QueryFailed {
+            method: "Email/set".to_string(),
+            message: e.to_string(),
+        })
+    })?;
+    info!("Bulk deleted {} emails successfully", email_ids.len());
+    Ok(())
+}
+
+pub async fn bulk_set_keyword(
+    client: &Client,
+    email_ids: &[EmailId],
+    keyword: &str,
+    value: bool,
+) -> Result<(), MissiveError> {
+    debug!(
+        "Bulk setting keyword '{keyword}'={value} on {} emails",
+        email_ids.len()
+    );
+    let mut request = client.build();
+    let set_req = request.set_email();
+    for id in email_ids {
+        set_req.update(id.as_str()).keyword(keyword, value);
+    }
+    request.send_set_email().await.map_err(|e| {
+        error!("JMAP bulk keyword update error: {e}");
+        MissiveError::Jmap(JmapErrorKind::QueryFailed {
+            method: "Email/set".to_string(),
+            message: e.to_string(),
+        })
+    })?;
+    info!(
+        "Bulk keyword update successful for {} emails",
+        email_ids.len()
+    );
+    Ok(())
+}
+
 fn format_timestamp(ts: i64, now: DateTime<Local>) -> String {
     use chrono::Utc;
     let dt: DateTime<Local> = DateTime::<Utc>::from_timestamp(ts, 0)

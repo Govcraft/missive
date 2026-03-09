@@ -15,14 +15,25 @@
     {{ total }} {% if *total == 1 %}email{% else %}emails{% endif %}
 </div>
 {% endif %}
+<div class="flex items-center gap-2 px-4 py-1 border-b border-gray-100 sm:px-6">
+    <input type="checkbox" id="select-all-checkbox"
+           class="h-4 w-4 rounded border-gray-300 text-slate-600 focus:ring-slate-600 cursor-pointer"
+           onchange="document.querySelectorAll('.bulk-checkbox').forEach(function(cb) { cb.checked = this.checked; }.bind(this)); document.body.dispatchEvent(new Event('bulkSelectionChanged'));" />
+    <label for="select-all-checkbox" class="text-xs text-gray-500 cursor-pointer">Select all</label>
+</div>
 <ul role="list" class="divide-y divide-gray-200">
 {% for email in emails %}
-    <li id="email-row-{{ email.id }}">
+    <li id="email-row-{{ email.id }}" class="flex items-start">
+        <div class="flex items-center pl-4 pt-4 sm:pl-6">
+            <input type="checkbox" class="bulk-checkbox h-4 w-4 rounded border-gray-300 text-slate-600 focus:ring-slate-600 cursor-pointer"
+                   value="{{ email.id }}"
+                   onchange="document.body.dispatchEvent(new Event('bulkSelectionChanged'));" />
+        </div>
         <a href="#"
            hx-get="/api/v1/emails/{{ email.id }}"
            hx-target="#email-detail-pane"
            hx-swap="innerHTML"
-           class="email-row block px-4 py-4 hover:bg-blue-50 cursor-pointer transition-colors sm:px-6{% if email.is_unread %} bg-white{% else %} bg-gray-50/50{% endif %}"
+           class="email-row flex-1 block px-4 py-4 hover:bg-blue-50 cursor-pointer transition-colors sm:pr-6{% if email.is_unread %} bg-white{% else %} bg-gray-50/50{% endif %}"
            onclick="document.querySelectorAll('.email-row').forEach(el => el.classList.remove('bg-blue-100')); this.classList.add('bg-blue-100');">
             <div class="flex items-baseline justify-between mb-1">
                 <span class="text-sm truncate max-w-[200px]{% if email.is_unread %} font-semibold text-gray-900{% else %} text-gray-600{% endif %}">
