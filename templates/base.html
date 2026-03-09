@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="/static/css/trix.css">
     <script src="/static/js/trix.js"></script>
 </head>
-<body class="h-full text-gray-900">
+<body class="h-full text-brand-900">
     {% block content %}{% endblock %}
 <div id="toast-container" aria-live="assertive"
      class="fixed top-4 right-4 z-50 flex w-96 flex-col gap-3"
@@ -31,17 +31,17 @@ function resizeEmailIframe(iframe) {
     }
 }
 document.body.addEventListener('emailRead', function() {
-    var row = document.querySelector('.email-row.bg-blue-100');
+    var row = document.querySelector('.email-row.bg-brand-100');
     if (row) {
         row.classList.remove('bg-white');
-        row.classList.add('bg-gray-50/50');
+        row.classList.add('bg-brand-50/50');
         row.querySelectorAll('.font-semibold').forEach(function(el) {
-            el.classList.remove('font-semibold', 'text-gray-900');
-            el.classList.add('text-gray-600');
+            el.classList.remove('font-semibold', 'text-brand-900');
+            el.classList.add('text-brand-600');
         });
         row.querySelectorAll('.font-medium').forEach(function(el) {
-            el.classList.remove('font-medium', 'text-gray-800');
-            el.classList.add('text-gray-600');
+            el.classList.remove('font-medium', 'text-brand-800');
+            el.classList.add('text-brand-600');
         });
     }
 });
@@ -121,7 +121,7 @@ document.addEventListener('keydown', function(e) {
 
     // x — toggle checkbox on current/highlighted email row
     if (key === 'x') {
-        var current = document.querySelector('.email-row.bg-blue-100');
+        var current = document.querySelector('.email-row.bg-brand-100');
         if (current) {
             var checkbox = current.closest('li').querySelector('.bulk-checkbox');
             if (checkbox) {
@@ -134,7 +134,7 @@ document.addEventListener('keydown', function(e) {
 
     // j/k — navigate email list
     if (key === 'j' || key === 'k') {
-        var current = document.querySelector('.email-row.bg-blue-100');
+        var current = document.querySelector('.email-row.bg-brand-100');
         var target;
         if (current) {
             target = key === 'j' ? current.nextElementSibling : current.previousElementSibling;

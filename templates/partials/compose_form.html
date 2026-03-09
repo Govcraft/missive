@@ -1,17 +1,17 @@
 <div class="overflow-hidden bg-white">
     <div class="px-4 py-5 sm:px-6">
-        <h2 class="text-lg/7 font-semibold text-gray-900">{{ title }}</h2>
+        <h2 class="text-lg/7 font-semibold text-brand-900">{{ title }}</h2>
     </div>
-    <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
+    <div class="border-t border-brand-200 px-4 py-5 sm:px-6">
         <form id="compose-form" hx-target="#email-detail-pane" hx-swap="innerHTML" class="space-y-4">
             {% if let Some(identity) = identities.first() %}
             <input type="hidden" name="identity_id" value="{{ identity.id }}" />
             <input type="hidden" name="in_reply_to" value="{{ form.in_reply_to }}" />
             <input type="hidden" name="references_header" value="{{ form.references_header }}" />
             <div>
-                <label class="block text-sm/6 font-medium text-gray-900">From</label>
+                <label class="block text-sm/6 font-medium text-brand-900">From</label>
                 <div class="mt-2">
-                    <div class="block w-full rounded-md bg-gray-50 px-3 py-1.5 text-base text-gray-900 sm:text-sm/6">
+                    <div class="block w-full rounded-md bg-brand-50 px-3 py-1.5 text-base text-brand-900 sm:text-sm/6">
                         {{ identity.name }} &lt;{{ identity.email }}&gt;
                     </div>
                 </div>
@@ -19,46 +19,46 @@
             {% endif %}
 
             <div>
-                <label for="to" class="block text-sm/6 font-medium text-gray-900">To</label>
+                <label for="to" class="block text-sm/6 font-medium text-brand-900">To</label>
                 <div class="mt-2">
                     <input id="to" type="text" name="to" value="{{ form.to }}" required
-                        class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-slate-600 sm:text-sm/6"
+                        class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-brand-900 outline-1 -outline-offset-1 outline-brand-300 placeholder:text-brand-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-500 sm:text-sm/6"
                         placeholder="recipient@example.com" />
                 </div>
             </div>
 
             <div>
-                <label for="cc" class="block text-sm/6 font-medium text-gray-900">Cc</label>
+                <label for="cc" class="block text-sm/6 font-medium text-brand-900">Cc</label>
                 <div class="mt-2">
                     <input id="cc" type="text" name="cc" value="{{ form.cc }}"
-                        class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-slate-600 sm:text-sm/6"
+                        class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-brand-900 outline-1 -outline-offset-1 outline-brand-300 placeholder:text-brand-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-500 sm:text-sm/6"
                         placeholder="cc@example.com" />
                 </div>
             </div>
 
             <div>
-                <label for="bcc" class="block text-sm/6 font-medium text-gray-900">Bcc</label>
+                <label for="bcc" class="block text-sm/6 font-medium text-brand-900">Bcc</label>
                 <div class="mt-2">
                     <input id="bcc" type="text" name="bcc" value="{{ form.bcc }}"
-                        class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-slate-600 sm:text-sm/6"
+                        class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-brand-900 outline-1 -outline-offset-1 outline-brand-300 placeholder:text-brand-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-500 sm:text-sm/6"
                         placeholder="bcc@example.com" />
                 </div>
             </div>
 
             <div>
-                <label for="subject" class="block text-sm/6 font-medium text-gray-900">Subject</label>
+                <label for="subject" class="block text-sm/6 font-medium text-brand-900">Subject</label>
                 <div class="mt-2">
                     <input id="subject" type="text" name="subject" value="{{ form.subject }}"
-                        class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-slate-600 sm:text-sm/6" />
+                        class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-brand-900 outline-1 -outline-offset-1 outline-brand-300 placeholder:text-brand-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-500 sm:text-sm/6" />
                 </div>
             </div>
 
             <div>
-                <label class="block text-sm/6 font-medium text-gray-900">Message</label>
+                <label class="block text-sm/6 font-medium text-brand-900">Message</label>
                 <div class="mt-2">
                     <input id="body_html" type="hidden" name="body_html" value="{{ form.body_html }}">
                     <trix-editor input="body_html"
-                        class="trix-content block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-slate-600 sm:text-sm/6">
+                        class="trix-content block w-full rounded-md bg-white px-3 py-1.5 text-base text-brand-900 outline-1 -outline-offset-1 outline-brand-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-500 sm:text-sm/6">
                     </trix-editor>
                 </div>
             </div>
@@ -72,7 +72,7 @@
                         hx-get="/api/v1/compose/cancel"
                         hx-target="#email-detail-pane"
                         hx-swap="innerHTML"
-                        class="relative inline-flex items-center rounded-l-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 inset-ring-1 inset-ring-gray-300 hover:bg-gray-50 focus:z-10">
+                        class="relative inline-flex items-center rounded-l-md bg-white px-3 py-2 text-sm font-semibold text-brand-900 inset-ring-1 inset-ring-brand-300 hover:bg-brand-50 focus:z-10">
                         Cancel
                     </button>
                     <button type="button"
@@ -80,12 +80,12 @@
                         hx-target="#email-detail-pane"
                         hx-swap="innerHTML"
                         hx-include="#compose-form"
-                        class="relative -ml-px inline-flex items-center bg-white px-3 py-2 text-sm font-semibold text-gray-900 inset-ring-1 inset-ring-gray-300 hover:bg-gray-50 focus:z-10">
+                        class="relative -ml-px inline-flex items-center bg-white px-3 py-2 text-sm font-semibold text-brand-900 inset-ring-1 inset-ring-brand-300 hover:bg-brand-50 focus:z-10">
                         Save Draft
                     </button>
                     <button type="submit"
                         hx-post="/api/v1/send"
-                        class="relative -ml-px inline-flex items-center rounded-r-md bg-slate-700 px-3 py-2 text-sm font-semibold text-white inset-ring-1 inset-ring-slate-700 hover:bg-slate-600 focus:z-10">
+                        class="relative -ml-px inline-flex items-center rounded-r-md bg-accent-600 px-3 py-2 text-sm font-semibold text-white inset-ring-1 inset-ring-accent-600 hover:bg-accent-500 focus:z-10">
                         Send
                     </button>
                 </span>

@@ -12,16 +12,16 @@
 
     <main class="missive-grid" hx-ext="sse" sse-connect="/api/v1/events">
         <!-- Mailbox sidebar -->
-        <div id="mailbox-pane" class="border-r border-gray-200 bg-gray-50 overflow-hidden overflow-y-auto shadow-sm sm:rounded-md"
+        <div id="mailbox-pane" class="border-r border-brand-200 bg-brand-50 overflow-hidden overflow-y-auto shadow-sm sm:rounded-md"
              hx-get="/api/v1/mailboxes"
              hx-trigger="load, mailboxesUpdated from:body, sse:mailboxesUpdated"
              hx-swap="innerHTML">
-            <div class="p-4 text-sm text-gray-400">Loading mailboxes...</div>
+            <div class="p-4 text-sm text-brand-400">Loading mailboxes...</div>
         </div>
 
         <!-- Email list pane -->
-        <div id="email-list-pane" class="border-r border-gray-200 overflow-hidden overflow-y-auto bg-white shadow-sm sm:rounded-md">
-            <div class="flex items-center justify-center h-full text-sm text-gray-400">
+        <div id="email-list-pane" class="border-r border-brand-200 overflow-hidden overflow-y-auto bg-white shadow-sm sm:rounded-md">
+            <div class="flex items-center justify-center h-full text-sm text-brand-400">
                 Select a mailbox
             </div>
         </div>

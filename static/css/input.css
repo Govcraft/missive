@@ -3,6 +3,22 @@
 
 @theme {
     --font-sans: "Inter", sans-serif;
+    --color-brand-950: oklch(0.2640 0.0579 251.70);
+    --color-brand-900: oklch(0.2939 0.0677 253.65);
+    --color-brand-800: oklch(0.3419 0.0757 251.02);
+    --color-brand-700: oklch(0.3971 0.0854 246.97);
+    --color-brand-600: oklch(0.4536 0.0993 246.77);
+    --color-brand-500: oklch(0.5232 0.1069 244.91);
+    --color-brand-400: oklch(0.6262 0.0982 241.66);
+    --color-brand-300: oklch(0.7428 0.0781 239.13);
+    --color-brand-200: oklch(0.8537 0.0460 238.17);
+    --color-brand-100: oklch(0.9275 0.0205 243.51);
+    --color-brand-50: oklch(0.9641 0.0094 243.02);
+    --color-accent-800: oklch(0.4987 0.0928 57.41);
+    --color-accent-700: oklch(0.5687 0.1078 57.23);
+    --color-accent-600: oklch(0.6547 0.1255 57.62);
+    --color-accent-500: oklch(0.7142 0.1153 65.29);
+    --color-accent-50: oklch(0.9766 0.0119 67.58);
 }
 
 /* Trix editor overrides */

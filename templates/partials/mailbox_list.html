@@ -5,13 +5,13 @@
            hx-get="/api/v1/emails?mailbox_id={{ mailbox.id }}"
            hx-target="#email-list-pane"
            hx-swap="innerHTML"
-           class="mailbox-item flex items-center justify-between px-4 py-1.5 text-sm hover:bg-gray-200 cursor-pointer transition-colors sm:px-6{% if mailbox.role == "inbox" %} bg-blue-100 text-blue-700{% endif %}"
-           {% if mailbox.role == "inbox" %}hx-trigger="load, click" {% endif %}onclick="document.querySelectorAll('.mailbox-item').forEach(el => el.classList.remove('bg-blue-100', 'text-blue-700')); this.classList.add('bg-blue-100', 'text-blue-700'); document.getElementById('active-mailbox-id').value = '{{ mailbox.id }}'; document.getElementById('search-input').value = '';">
+           class="mailbox-item flex items-center justify-between px-4 py-1.5 text-sm hover:bg-brand-200 cursor-pointer transition-colors sm:px-6{% if mailbox.role == "inbox" %} bg-brand-100 text-brand-700{% endif %}"
+           {% if mailbox.role == "inbox" %}hx-trigger="load, click" {% endif %}onclick="document.querySelectorAll('.mailbox-item').forEach(el => el.classList.remove('bg-brand-100', 'text-brand-700')); this.classList.add('bg-brand-100', 'text-brand-700'); document.getElementById('active-mailbox-id').value = '{{ mailbox.id }}'; document.getElementById('search-input').value = '';">
             <span class="truncate{% if mailbox.role == "inbox" %} font-semibold{% endif %}">
                 {{ mailbox.name }}
             </span>
             {% if mailbox.unread_count > 0 %}
-            <span class="ml-2 inline-flex items-center rounded-full bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700 inset-ring inset-ring-blue-700/10">
+            <span class="ml-2 inline-flex items-center rounded-full bg-accent-50 px-1.5 py-0.5 text-xs font-medium text-accent-800 inset-ring inset-ring-accent-600/20">
                 {{ mailbox.unread_count }}
             </span>
             {% endif %}
