@@ -64,6 +64,7 @@ async fn main() -> Result<()> {
                 .route("/emails", get(routes::emails::list_emails))
                 .route("/emails/{id}", get(routes::emails::get_email).delete(routes::emails::delete_email))
                 .route("/emails/{id}/mark-unread", post(routes::emails::mark_unread))
+                .route("/emails/{id}/toggle-flag", post(routes::emails::toggle_flag))
                 .route("/emails/{id}/reply", get(routes::emails::reply))
                 .route("/emails/{id}/reply-all", get(routes::emails::reply_all))
                 .route("/emails/{id}/forward", get(routes::emails::forward))

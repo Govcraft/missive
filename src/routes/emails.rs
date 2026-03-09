@@ -382,6 +382,34 @@ pub async fn move_email(
         .body(Body::from(html))?)
 }
 
+#[derive(Deserialize)]
+pub struct ToggleFlagParams {
+    pub flagged: bool,
+}
+
+#[derive(Template)]
+#[template(path = "partials/star_button.html")]
+struct StarButtonTemplate {
+    email_id: EmailId,
+    is_flagged: bool,
+}
+
+pub async fn toggle_flag(
+    AuthenticatedClient(client, _, session): AuthenticatedClient,
+    Path(id): Path<EmailId>,
+    Form(params): Form<ToggleFlagParams>,
+) -> std::result::Result<impl IntoResponse, MissiveError> {
+    debug!("toggle_flag: id={id}, flagged={}", params.flagged);
+    jmap::toggle_email_flagged(&client, &id, params.flagged).await?;
+    let label = if params.flagged { "Starred" } else { "Unstarred" };
+    push_flash(&session, FlashMessage::success(label)).await;
+    Ok(HtmlTemplate::page(StarButtonTemplate {
+        email_id: id,
+        is_flagged: params.flagged,
+    })
+    .with_hx_trigger("flashUpdated"))
+}
+
 pub async fn mark_unread(
     AuthenticatedClient(client, _, session): AuthenticatedClient,
     Path(id): Path<EmailId>,
@@ -595,6 +623,7 @@ mod tests {
             from_email: "alice@example.com".to_string(),
             to_emails: "bob@example.com".to_string(),
             cc_emails: String::new(),
+            is_flagged: false,
         }
     }
 

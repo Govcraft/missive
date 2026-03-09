@@ -140,6 +140,12 @@ document.addEventListener('keydown', function(e) {
     var hasActions = detailPane.querySelector('[title="Reply"], [title="Reply all"], [title="Forward"]');
     if (!hasActions) return;
 
+    if (key === 's') {
+        var starBtn = detailPane.querySelector('[title="Star"], [title="Remove star"]');
+        if (starBtn) starBtn.click();
+        return;
+    }
+
     var actionMap = {
         'r': 'Reply',
         'a': 'Reply all',

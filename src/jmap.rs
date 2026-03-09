@@ -222,6 +222,7 @@ pub struct EmailSummary {
     pub preview: String,
     pub is_unread: bool,
     pub has_attachment: bool,
+    pub is_flagged: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -240,6 +241,7 @@ pub struct EmailDetail {
     pub from_email: String,
     pub to_emails: String,
     pub cc_emails: String,
+    pub is_flagged: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -387,6 +389,7 @@ pub async fn fetch_emails(
             preview: e.preview().unwrap_or_default().to_string(),
             is_unread: !e.keywords().contains(&"$seen"),
             has_attachment: e.has_attachment(),
+            is_flagged: e.keywords().contains(&"$flagged"),
         })
         .collect();
 
@@ -412,6 +415,7 @@ pub async fn fetch_email_detail(
         email::Property::Attachments,
         email::Property::MessageId,
         email::Property::References,
+        email::Property::Keywords,
     ]);
     get_request.arguments().fetch_text_body_values(true);
     get_request.arguments().fetch_html_body_values(true);
@@ -470,6 +474,7 @@ pub async fn fetch_email_detail(
         from_email: format_addresses_raw(email.from()),
         to_emails: format_addresses_raw(email.to()),
         cc_emails: format_addresses_raw(email.cc()),
+        is_flagged: email.keywords().contains(&"$flagged"),
     })
 }
 
@@ -783,6 +788,22 @@ pub async fn mark_email_unread(client: &Client, email_id: &EmailId) -> Result<()
         .set_email()
         .update(email_id.as_str())
         .keyword("$seen", false);
+    request.send_set_email().await.map_err(|e| {
+        error!("JMAP Email/set keyword update error: {e}");
+        MissiveError::Jmap(JmapErrorKind::QueryFailed {
+            method: "Email/set".to_string(),
+            message: e.to_string(),
+        })
+    })?;
+    Ok(())
+}
+
+pub async fn toggle_email_flagged(client: &Client, email_id: &EmailId, flagged: bool) -> Result<(), MissiveError> {
+    let mut request = client.build();
+    request
+        .set_email()
+        .update(email_id.as_str())
+        .keyword("$flagged", flagged);
     request.send_set_email().await.map_err(|e| {
         error!("JMAP Email/set keyword update error: {e}");
         MissiveError::Jmap(JmapErrorKind::QueryFailed {
