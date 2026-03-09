@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use acton_service::prelude::{debug, error, info};
+use acton_service::prelude::{debug, error, info, trace};
 use chrono::{DateTime, Local};
 use dashmap::DashMap;
 use jmap_client::{
@@ -9,6 +9,7 @@ use jmap_client::{
     email::{self, Email, EmailAddress, EmailBodyPart},
     identity,
     mailbox::{self, Role},
+    Set,
 };
 
 use serde::{Deserialize, Serialize};
@@ -258,7 +259,7 @@ pub async fn create_client(
 ) -> Result<Client, MissiveError> {
     let host = jmap_url.host();
 
-    debug!("Creating JMAP client: url={jmap_url}, host={host}, user={username}");
+    trace!("Creating JMAP client: url={jmap_url}, host={host}, user={username}");
 
     let client = Client::new()
         .credentials((username, password))
@@ -278,12 +279,12 @@ pub async fn create_client(
             }
         })?;
 
-    info!("JMAP client connected successfully for user={username}");
+    trace!("JMAP client connected successfully for user={username}");
     Ok(client)
 }
 
 pub async fn fetch_mailboxes(client: &Client) -> Result<Vec<MailboxInfo>, MissiveError> {
-    debug!("Fetching mailboxes from JMAP server");
+    trace!("Fetching mailboxes from JMAP server");
     let mut request = client.build();
     request.get_mailbox().properties([
         mailbox::Property::Id,
@@ -311,7 +312,7 @@ pub async fn fetch_mailboxes(client: &Client) -> Result<Vec<MailboxInfo>, Missiv
         })
         .collect();
 
-    debug!("Fetched {} mailboxes from JMAP", mailboxes.len());
+    trace!("Fetched {} mailboxes from JMAP", mailboxes.len());
 
     mailboxes.sort_by(|a, b| {
         let a_priority = role_sort_priority(&a.role);
@@ -331,7 +332,7 @@ pub async fn fetch_emails(
     limit: usize,
     search: Option<&SearchQuery>,
 ) -> Result<(Vec<EmailSummary>, Option<usize>), MissiveError> {
-    debug!("Fetching emails: mailbox_id={mailbox_id}, position={position}, limit={limit}, search={search:?}");
+    trace!("Fetching emails: mailbox_id={mailbox_id}, position={position}, limit={limit}, search={search:?}");
     let mut request = client.build();
     let query_req = request.query_email();
     query_req.filter(build_email_filter(mailbox_id, search));
@@ -352,7 +353,7 @@ pub async fn fetch_emails(
         })?;
 
     let ids: Vec<&str> = query_response.ids().iter().map(|s| s.as_str()).collect();
-    debug!("Email query returned {} ids", ids.len());
+    trace!("Email query returned {} ids", ids.len());
     let total = query_response.total();
     if ids.is_empty() {
         return Ok((Vec::new(), total));
@@ -400,7 +401,7 @@ pub async fn fetch_email_detail(
     client: &Client,
     email_id: &EmailId,
 ) -> Result<EmailDetail, MissiveError> {
-    debug!("Fetching email detail: id={email_id}");
+    trace!("Fetching email detail: id={email_id}");
     let mut request = client.build();
     let get_request = request.get_email().ids([email_id.as_str()]);
     get_request.properties([
@@ -489,7 +490,7 @@ pub fn format_file_size(bytes: usize) -> String {
 }
 
 pub async fn download_blob(client: &Client, blob_id: &BlobId) -> Result<Vec<u8>, MissiveError> {
-    debug!("Downloading blob: id={blob_id}");
+    trace!("Downloading blob: id={blob_id}");
     client.download(blob_id.as_str()).await.map_err(|e| {
         error!("JMAP blob download error: {e}");
         MissiveError::Jmap(JmapErrorKind::BlobDownloadFailed {
@@ -520,12 +521,15 @@ pub async fn upload_blob(
         })
     })?;
     let blob_id = BlobId::from(response.blob_id());
-    info!("Blob uploaded successfully: id={blob_id}");
+    info!(
+        "Blob uploaded successfully: id={blob_id}, server_size={}",
+        response.size()
+    );
     Ok(blob_id)
 }
 
 pub async fn fetch_identities(client: &Client) -> Result<Vec<IdentityInfo>, MissiveError> {
-    debug!("Fetching identities from JMAP server");
+    trace!("Fetching identities from JMAP server");
     let mut request = client.build();
     request.get_identity().properties([
         identity::Property::Id,
@@ -551,7 +555,7 @@ pub async fn fetch_identities(client: &Client) -> Result<Vec<IdentityInfo>, Miss
         })
         .collect();
 
-    debug!("Fetched {} identities from JMAP", identities.len());
+    trace!("Fetched {} identities from JMAP", identities.len());
     Ok(identities)
 }
 
@@ -568,8 +572,61 @@ pub struct EmailContent<'a> {
     pub bcc: &'a str,
     pub subject: &'a str,
     pub body_text: &'a str,
+    pub body_html: Option<&'a str>,
     pub threading: &'a ThreadingHeaders<'a>,
     pub attachments: Vec<UploadedAttachment>,
+}
+
+/// Build an `EmailBodyPart` with `disposition: "attachment"` set.
+///
+/// The `jmap-client` crate lacks a `disposition()` setter on `EmailBodyPart<Set>`,
+/// so we construct the part via serde deserialization from a JSON object instead.
+fn build_attachment_body_part(att: &UploadedAttachment) -> EmailBodyPart {
+    serde_json::from_value(serde_json::json!({
+        "blobId": att.blob_id.to_string(),
+        "name": att.name,
+        "type": att.content_type,
+        "disposition": "attachment"
+    }))
+    .unwrap_or_else(|e| {
+        error!("Failed to build attachment body part: {e}");
+        EmailBodyPart::new()
+            .blob_id(att.blob_id.to_string())
+            .name(&att.name)
+            .content_type(&att.content_type)
+            .into()
+    })
+}
+
+fn set_email_body(email: &mut Email<Set>, body_text: &str, body_html: Option<&str>) {
+    match body_html {
+        Some(html) => {
+            let plain = html2text::from_read(html.as_bytes(), 78)
+                .unwrap_or_else(|_| body_text.to_string());
+            email
+                .body_value("text_body".to_string(), plain.as_str())
+                .text_body(
+                    EmailBodyPart::new()
+                        .content_type("text/plain")
+                        .part_id("text_body"),
+                )
+                .body_value("html_body".to_string(), html)
+                .html_body(
+                    EmailBodyPart::new()
+                        .content_type("text/html")
+                        .part_id("html_body"),
+                );
+        }
+        None => {
+            email
+                .body_value("body".to_string(), body_text)
+                .text_body(
+                    EmailBodyPart::new()
+                        .content_type("text/plain")
+                        .part_id("body"),
+                );
+        }
+    }
 }
 
 fn parse_recipient_emails(input: &str) -> Vec<&str> {
@@ -608,13 +665,8 @@ pub async fn save_draft(
         .mailbox_ids([&drafts_id])
         .from([EmailAddress::from(content.from_email)])
         .subject(content.subject)
-        .keywords(["$draft"])
-        .body_value("body".to_string(), content.body_text)
-        .text_body(
-            EmailBodyPart::new()
-                .content_type("text/plain")
-                .part_id("body"),
-        );
+        .keywords(["$draft"]);
+    set_email_body(email, content.body_text, content.body_html);
 
     let to_addrs = parse_address_list(content.to);
     if !to_addrs.is_empty() {
@@ -640,13 +692,16 @@ pub async fn save_draft(
         email.references(ids);
     }
 
+    debug!(
+        "save_draft: adding {} attachment(s) to JMAP request",
+        content.attachments.len()
+    );
     for att in &content.attachments {
-        email.attachment(
-            EmailBodyPart::new()
-                .blob_id(att.blob_id.to_string())
-                .name(&att.name)
-                .content_type(&att.content_type),
+        debug!(
+            "save_draft JMAP: blob_id={}, name={}, type={}",
+            att.blob_id, att.name, att.content_type
         );
+        email.attachment(build_attachment_body_part(att));
     }
 
     request.send_set_email().await.map_err(|e| {
@@ -657,7 +712,7 @@ pub async fn save_draft(
         })
     })?;
 
-    info!("Draft saved successfully");
+    trace!("Draft saved successfully");
     Ok(())
 }
 
@@ -699,13 +754,8 @@ pub async fn send_email(
         .mailbox_ids([&drafts_id])
         .from([EmailAddress::from(content.from_email)])
         .to(to_addrs)
-        .subject(content.subject)
-        .body_value("body".to_string(), content.body_text)
-        .text_body(
-            EmailBodyPart::new()
-                .content_type("text/plain")
-                .part_id("body"),
-        );
+        .subject(content.subject);
+    set_email_body(email, content.body_text, content.body_html);
 
     let cc_addrs = parse_address_list(content.cc);
     if !cc_addrs.is_empty() {
@@ -726,13 +776,16 @@ pub async fn send_email(
         email.references(ids);
     }
 
+    debug!(
+        "send_email: adding {} attachment(s) to JMAP request",
+        content.attachments.len()
+    );
     for att in &content.attachments {
-        email.attachment(
-            EmailBodyPart::new()
-                .blob_id(att.blob_id.to_string())
-                .name(&att.name)
-                .content_type(&att.content_type),
+        debug!(
+            "send_email JMAP: blob_id={}, name={}, type={}",
+            att.blob_id, att.name, att.content_type
         );
+        email.attachment(build_attachment_body_part(att));
     }
 
     let mut response = request.send_set_email().await.map_err(|e| {
@@ -761,7 +814,7 @@ pub async fn send_email(
 
     // Step 2: Submit via EmailSubmission/set with onSuccessUpdateEmail
     // to move the email from Drafts to Sent (and Inbox if self-addressed)
-    debug!("Submitting email: id={email_id}");
+    trace!("Submitting email: id={email_id}");
     let mut request = client.build();
     let submit_req = request.set_email_submission();
     let mut rcpt_to = parse_recipient_emails(content.to);
@@ -806,7 +859,7 @@ pub async fn send_email(
         })
     })?;
 
-    info!("Email sent successfully");
+    trace!("Email sent successfully");
     Ok(())
 }
 
@@ -859,7 +912,7 @@ pub async fn toggle_email_flagged(client: &Client, email_id: &EmailId, flagged: 
 }
 
 pub async fn delete_email(client: &Client, email_id: &EmailId) -> Result<(), MissiveError> {
-    debug!("Deleting email: id={email_id}");
+    trace!("Deleting email: id={email_id}");
     let mut request = client.build();
     request.set_email().destroy([email_id.as_str()]);
     let mut response = request.send_set_email().await.map_err(|e| {
@@ -876,7 +929,7 @@ pub async fn delete_email(client: &Client, email_id: &EmailId) -> Result<(), Mis
             message: format!("Failed to delete email: {e}"),
         })
     })?;
-    info!("Email deleted successfully: id={email_id}");
+    trace!("Email deleted successfully: id={email_id}");
     Ok(())
 }
 
@@ -902,7 +955,7 @@ pub async fn move_email(
     from_mailbox_id: &MailboxId,
     to_mailbox_id: &MailboxId,
 ) -> Result<(), MissiveError> {
-    debug!("Moving email {email_id} from {from_mailbox_id} to {to_mailbox_id}");
+    trace!("Moving email {email_id} from {from_mailbox_id} to {to_mailbox_id}");
     let mut request = client.build();
     request
         .set_email()
@@ -916,7 +969,7 @@ pub async fn move_email(
             message: e.to_string(),
         })
     })?;
-    info!("Email moved successfully: id={email_id}");
+    trace!("Email moved successfully: id={email_id}");
     Ok(())
 }
 
@@ -926,7 +979,7 @@ pub async fn bulk_move_emails(
     from_mailbox_id: &MailboxId,
     to_mailbox_id: &MailboxId,
 ) -> Result<(), MissiveError> {
-    debug!(
+    trace!(
         "Bulk moving {} emails from {from_mailbox_id} to {to_mailbox_id}",
         email_ids.len()
     );
@@ -945,7 +998,7 @@ pub async fn bulk_move_emails(
             message: e.to_string(),
         })
     })?;
-    info!("Bulk moved {} emails successfully", email_ids.len());
+    trace!("Bulk moved {} emails successfully", email_ids.len());
     Ok(())
 }
 
@@ -953,7 +1006,7 @@ pub async fn bulk_delete_emails(
     client: &Client,
     email_ids: &[EmailId],
 ) -> Result<(), MissiveError> {
-    debug!("Bulk deleting {} emails", email_ids.len());
+    trace!("Bulk deleting {} emails", email_ids.len());
     let ids: Vec<&str> = email_ids.iter().map(|id| id.as_str()).collect();
     let mut request = client.build();
     request.set_email().destroy(ids);
@@ -964,7 +1017,7 @@ pub async fn bulk_delete_emails(
             message: e.to_string(),
         })
     })?;
-    info!("Bulk deleted {} emails successfully", email_ids.len());
+    trace!("Bulk deleted {} emails successfully", email_ids.len());
     Ok(())
 }
 
@@ -974,7 +1027,7 @@ pub async fn bulk_set_keyword(
     keyword: &str,
     value: bool,
 ) -> Result<(), MissiveError> {
-    debug!(
+    trace!(
         "Bulk setting keyword '{keyword}'={value} on {} emails",
         email_ids.len()
     );
@@ -990,7 +1043,7 @@ pub async fn bulk_set_keyword(
             message: e.to_string(),
         })
     })?;
-    info!(
+    trace!(
         "Bulk keyword update successful for {} emails",
         email_ids.len()
     );

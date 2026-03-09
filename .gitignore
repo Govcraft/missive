@@ -13,5 +13,9 @@ node_modules/
 # Tailwind build output
 static/css/app.css
 
+# Vendor build artifacts
+static/js/trix.js
+static/css/trix.css
+
 # Rust
 target/

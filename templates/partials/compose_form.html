@@ -54,49 +54,41 @@
             </div>
 
             <div>
-                <label for="body" class="block text-sm/6 font-medium text-gray-900">Message</label>
+                <label class="block text-sm/6 font-medium text-gray-900">Message</label>
                 <div class="mt-2">
-                    <textarea id="body" name="body" rows="10"
-                        class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-slate-600 sm:text-sm/6 min-h-48 sm:min-h-64">{{ form.body }}</textarea>
+                    <input id="body_html" type="hidden" name="body_html" value="{{ form.body_html }}">
+                    <trix-editor input="body_html"
+                        class="trix-content block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-slate-600 sm:text-sm/6">
+                    </trix-editor>
                 </div>
             </div>
 
-            <div>
-                <label class="block text-sm/6 font-medium text-gray-900">Attachments</label>
-                <div id="attachment-list" class="mt-2 space-y-2"></div>
-                <div class="mt-2">
-                    <input type="file" id="file-upload"
-                        class="block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-slate-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-100"
-                        hx-post="/api/v1/compose/upload"
-                        hx-target="#attachment-list"
-                        hx-swap="beforeend"
-                        hx-encoding="multipart/form-data"
-                        hx-trigger="change"
-                        name="file" />
-                </div>
-            </div>
+            <input type="hidden" id="attachments-json" name="attachments_json" value="{{ form.attachments_json }}" />
+            <div id="attachment-list" class="space-y-2"></div>
 
-            <div class="flex items-center justify-end gap-3 pt-4">
-                <button type="button"
-                    hx-get="/api/v1/compose/cancel"
-                    hx-target="#email-detail-pane"
-                    hx-swap="innerHTML"
-                    class="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 shadow-xs inset-ring-1 inset-ring-gray-300 hover:bg-gray-50">
-                    Cancel
-                </button>
-                <button type="button"
-                    hx-post="/api/v1/drafts"
-                    hx-target="#email-detail-pane"
-                    hx-swap="innerHTML"
-                    hx-include="#compose-form"
-                    class="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 shadow-xs inset-ring-1 inset-ring-gray-300 hover:bg-gray-50">
-                    Save Draft
-                </button>
-                <button type="submit"
-                    hx-post="/api/v1/send"
-                    class="rounded-md bg-slate-700 px-3 py-1.5 text-sm font-semibold text-white shadow-xs hover:bg-slate-600">
-                    Send
-                </button>
+            <div class="flex items-center justify-end pt-4">
+                <span class="isolate inline-flex rounded-md shadow-xs">
+                    <button type="button"
+                        hx-get="/api/v1/compose/cancel"
+                        hx-target="#email-detail-pane"
+                        hx-swap="innerHTML"
+                        class="relative inline-flex items-center rounded-l-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 inset-ring-1 inset-ring-gray-300 hover:bg-gray-50 focus:z-10">
+                        Cancel
+                    </button>
+                    <button type="button"
+                        hx-post="/api/v1/drafts"
+                        hx-target="#email-detail-pane"
+                        hx-swap="innerHTML"
+                        hx-include="#compose-form"
+                        class="relative -ml-px inline-flex items-center bg-white px-3 py-2 text-sm font-semibold text-gray-900 inset-ring-1 inset-ring-gray-300 hover:bg-gray-50 focus:z-10">
+                        Save Draft
+                    </button>
+                    <button type="submit"
+                        hx-post="/api/v1/send"
+                        class="relative -ml-px inline-flex items-center rounded-r-md bg-slate-700 px-3 py-2 text-sm font-semibold text-white inset-ring-1 inset-ring-slate-700 hover:bg-slate-600 focus:z-10">
+                        Send
+                    </button>
+                </span>
             </div>
         </form>
     </div>

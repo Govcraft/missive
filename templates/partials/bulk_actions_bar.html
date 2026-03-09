@@ -1,63 +1,71 @@
-<div id="bulk-actions-bar" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-3 shadow-xl">
-    <span id="bulk-count" class="text-sm text-white mr-2">0 selected</span>
-    <form class="inline-flex gap-1">
+<div id="bulk-actions-bar" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 rounded-lg bg-gray-900 px-4 py-3 shadow-xl">
+    <span id="bulk-count" class="text-sm text-white">0 selected</span>
+    <form class="inline-flex">
         <input type="hidden" name="mailbox_id" id="bulk-mailbox-id" value="" />
         <input type="hidden" name="email_ids" id="bulk-email-ids" value="" />
 
-        <button type="submit" formaction="javascript:void(0)"
-                class="rounded-md bg-gray-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-600"
-                hx-post="/api/v1/emails/bulk"
-                hx-target="#email-detail-pane"
-                hx-swap="innerHTML"
-                hx-include="#bulk-email-ids, #bulk-mailbox-id"
-                hx-vals='{"action": "delete"}'
-                hx-confirm="Delete selected emails?">
-            Delete
-        </button>
-        <button type="submit" formaction="javascript:void(0)"
-                class="rounded-md bg-gray-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-600"
-                hx-post="/api/v1/emails/bulk"
-                hx-target="#email-detail-pane"
-                hx-swap="innerHTML"
-                hx-include="#bulk-email-ids, #bulk-mailbox-id"
-                hx-vals='{"action": "archive"}'>
-            Archive
-        </button>
-        <button type="submit" formaction="javascript:void(0)"
-                class="rounded-md bg-gray-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-600"
-                hx-post="/api/v1/emails/bulk"
-                hx-target="#email-detail-pane"
-                hx-swap="innerHTML"
-                hx-include="#bulk-email-ids, #bulk-mailbox-id"
-                hx-vals='{"action": "spam"}'>
-            Spam
-        </button>
-        <button type="submit" formaction="javascript:void(0)"
-                class="rounded-md bg-gray-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-600"
-                hx-post="/api/v1/emails/bulk"
-                hx-target="#email-detail-pane"
-                hx-swap="innerHTML"
-                hx-include="#bulk-email-ids, #bulk-mailbox-id"
-                hx-vals='{"action": "read"}'>
-            Mark read
-        </button>
-        <button type="submit" formaction="javascript:void(0)"
-                class="rounded-md bg-gray-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-600"
-                hx-post="/api/v1/emails/bulk"
-                hx-target="#email-detail-pane"
-                hx-swap="innerHTML"
-                hx-include="#bulk-email-ids, #bulk-mailbox-id"
-                hx-vals='{"action": "unread"}'>
-            Mark unread
-        </button>
-        <button type="submit" formaction="javascript:void(0)"
-                class="rounded-md bg-gray-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-600"
-                hx-post="/api/v1/emails/bulk"
-                hx-target="#email-detail-pane"
-                hx-swap="innerHTML"
-                hx-include="#bulk-email-ids, #bulk-mailbox-id"
-                hx-vals='{"action": "flag"}'>
-            Star
-        </button>
+        <span class="isolate inline-flex rounded-md shadow-xs">
+            <button type="submit" formaction="javascript:void(0)"
+                    class="relative inline-flex items-center rounded-l-md bg-gray-700 px-3 py-2 text-xs font-medium text-white inset-ring-1 inset-ring-gray-600 hover:bg-gray-600 focus:z-10"
+                    hx-post="/api/v1/emails/bulk"
+                    hx-target="#email-detail-pane"
+                    hx-swap="innerHTML"
+                    hx-include="#bulk-email-ids, #bulk-mailbox-id"
+                    hx-vals='{"action": "delete"}'
+                    hx-confirm="Delete selected emails?">
+                Delete
+            </button>
+            <button type="submit" formaction="javascript:void(0)"
+                    class="relative -ml-px inline-flex items-center bg-gray-700 px-3 py-2 text-xs font-medium text-white inset-ring-1 inset-ring-gray-600 hover:bg-gray-600 focus:z-10"
+                    hx-post="/api/v1/emails/bulk"
+                    hx-target="#email-detail-pane"
+                    hx-swap="innerHTML"
+                    hx-include="#bulk-email-ids, #bulk-mailbox-id"
+                    hx-vals='{"action": "archive"}'>
+                Archive
+            </button>
+            <button type="submit" formaction="javascript:void(0)"
+                    class="relative -ml-px inline-flex items-center rounded-r-md bg-gray-700 px-3 py-2 text-xs font-medium text-white inset-ring-1 inset-ring-gray-600 hover:bg-gray-600 focus:z-10"
+                    hx-post="/api/v1/emails/bulk"
+                    hx-target="#email-detail-pane"
+                    hx-swap="innerHTML"
+                    hx-include="#bulk-email-ids, #bulk-mailbox-id"
+                    hx-vals='{"action": "spam"}'>
+                Spam
+            </button>
+        </span>
+
+        <span class="isolate inline-flex rounded-md shadow-xs ml-2">
+            <button type="submit" formaction="javascript:void(0)"
+                    class="relative inline-flex items-center rounded-l-md bg-gray-700 px-3 py-2 text-xs font-medium text-white inset-ring-1 inset-ring-gray-600 hover:bg-gray-600 focus:z-10"
+                    hx-post="/api/v1/emails/bulk"
+                    hx-target="#email-detail-pane"
+                    hx-swap="innerHTML"
+                    hx-include="#bulk-email-ids, #bulk-mailbox-id"
+                    hx-vals='{"action": "read"}'>
+                Mark read
+            </button>
+            <button type="submit" formaction="javascript:void(0)"
+                    class="relative -ml-px inline-flex items-center rounded-r-md bg-gray-700 px-3 py-2 text-xs font-medium text-white inset-ring-1 inset-ring-gray-600 hover:bg-gray-600 focus:z-10"
+                    hx-post="/api/v1/emails/bulk"
+                    hx-target="#email-detail-pane"
+                    hx-swap="innerHTML"
+                    hx-include="#bulk-email-ids, #bulk-mailbox-id"
+                    hx-vals='{"action": "unread"}'>
+                Mark unread
+            </button>
+        </span>
+
+        <span class="isolate inline-flex rounded-md shadow-xs ml-2">
+            <button type="submit" formaction="javascript:void(0)"
+                    class="relative inline-flex items-center rounded-md bg-gray-700 px-3 py-2 text-xs font-medium text-white inset-ring-1 inset-ring-gray-600 hover:bg-gray-600 focus:z-10"
+                    hx-post="/api/v1/emails/bulk"
+                    hx-target="#email-detail-pane"
+                    hx-swap="innerHTML"
+                    hx-include="#bulk-email-ids, #bulk-mailbox-id"
+                    hx-vals='{"action": "flag"}'>
+                Star
+            </button>
+        </span>
     </form>
 </div>

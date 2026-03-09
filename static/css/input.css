@@ -5,6 +5,15 @@
     --font-sans: "Inter", sans-serif;
 }
 
+/* Trix editor overrides */
+trix-editor {
+    min-height: 12rem;
+}
+
+trix-toolbar .trix-button-group--file-tools {
+    display: none;
+}
+
 .missive-grid {
     display: grid;
     grid-template-columns: 250px 350px 1fr;

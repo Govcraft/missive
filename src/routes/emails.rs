@@ -8,6 +8,7 @@ use axum::extract::Multipart;
 use crate::config::MissiveConfig;
 use crate::error::{JmapErrorKind, MissiveError};
 use crate::jmap::{self, BlobId, EmailDetail, EmailId, EmailSummary, IdentityId, IdentityInfo, MailboxId, MailboxInfo, SearchQuery};
+use crate::sanitize::sanitize_compose_html;
 use crate::session::AuthenticatedClient;
 
 #[derive(Deserialize)]
@@ -78,15 +79,14 @@ pub struct ComposeFormData {
     #[serde(default)]
     pub body: String,
     #[serde(default)]
+    pub body_html: String,
+    #[serde(default)]
     pub in_reply_to: String,
     #[serde(default)]
     pub references_header: String,
+    /// JSON-encoded array of attachment objects: [{"blob_id":"...","name":"...","content_type":"..."}]
     #[serde(default)]
-    pub attachment_blob_ids: Vec<String>,
-    #[serde(default)]
-    pub attachment_names: Vec<String>,
-    #[serde(default)]
-    pub attachment_types: Vec<String>,
+    pub attachments_json: String,
 }
 
 pub async fn list_emails(
@@ -95,11 +95,11 @@ pub async fn list_emails(
     Query(params): Query<EmailListParams>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
     let search = params.search.as_deref().and_then(SearchQuery::new);
-    debug!("list_emails: mailbox_id={}, search={search:?}", params.mailbox_id);
+    trace!("list_emails: mailbox_id={}, search={search:?}", params.mailbox_id);
     let page_size = state.config().custom.page_size;
     let (emails, total_count) =
         jmap::fetch_emails(&client, &params.mailbox_id, params.position, page_size, search.as_ref()).await?;
-    debug!(
+    trace!(
         "list_emails: returning {} emails at position {}",
         emails.len(),
         params.position
@@ -122,10 +122,10 @@ pub async fn get_email(
     AuthenticatedClient(client, _, _): AuthenticatedClient,
     Path(id): Path<EmailId>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    debug!("get_email: id={id}");
+    trace!("get_email: id={id}");
     let email = jmap::fetch_email_detail(&client, &id).await?;
     let mailboxes = jmap::fetch_mailboxes(&client).await?;
-    debug!("get_email: returning email subject={}", email.subject);
+    trace!("get_email: returning email subject={}", email.subject);
 
     // Mark as read on the server (fire-and-forget; don't fail the view)
     if let Err(e) = jmap::mark_email_read(&client, &id).await {
@@ -146,7 +146,7 @@ pub async fn download_attachment(
     Path(blob_id): Path<BlobId>,
     Query(params): Query<DownloadParams>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    debug!("download_attachment: blob_id={blob_id}");
+    trace!("download_attachment: blob_id={blob_id}");
     let data = jmap::download_blob(&client, &blob_id).await?;
     let filename = params.name.unwrap_or_else(|| "attachment".to_string());
     Ok(Response::builder()
@@ -189,7 +189,7 @@ fn filter_identities_for_user(
 pub async fn compose_form(
     AuthenticatedClient(client, username, session): AuthenticatedClient,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    debug!("compose_form: loading compose view for user={username}");
+    trace!("compose_form: loading compose view for user={username}");
     let all_identities = jmap::fetch_identities(&client).await?;
     let identities = filter_identities_for_user(all_identities, &username);
     if identities.is_empty() {
@@ -212,7 +212,7 @@ pub async fn send_email(
     AuthenticatedClient(client, username, session): AuthenticatedClient,
     Form(form): Form<ComposeFormData>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    info!("send_email: sending message to={}", form.to);
+    trace!("send_email: sending message to={}", form.to);
     let all_identities = jmap::fetch_identities(&client).await?;
     let identities = filter_identities_for_user(all_identities, &username);
     let identity = identities
@@ -233,7 +233,22 @@ pub async fn send_email(
         in_reply_to: Some(form.in_reply_to.as_str()).filter(|s| !s.is_empty()),
         references: Some(form.references_header.as_str()).filter(|s| !s.is_empty()),
     };
+    debug!(
+        "send_email: attachments_json raw value={:?}",
+        form.attachments_json
+    );
     let attachments = build_attachments_from_form(&form);
+    debug!(
+        "send_email: {} attachment(s) parsed from form",
+        attachments.len()
+    );
+    for att in &attachments {
+        debug!(
+            "send_email: attachment blob_id={}, name={}, type={}",
+            att.blob_id, att.name, att.content_type
+        );
+    }
+    let body_html = sanitized_body_html(&form.body_html);
     let content = jmap::EmailContent {
         from_email: &from_email,
         to: &form.to,
@@ -241,6 +256,7 @@ pub async fn send_email(
         bcc: &form.bcc,
         subject: &form.subject,
         body_text: &form.body,
+        body_html: body_html.as_deref(),
         threading: &threading,
         attachments,
     };
@@ -269,7 +285,7 @@ pub async fn save_draft(
     AuthenticatedClient(client, username, session): AuthenticatedClient,
     Form(form): Form<ComposeFormData>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    info!("save_draft: saving draft");
+    trace!("save_draft: saving draft");
     let all_identities = jmap::fetch_identities(&client).await?;
     let identities = filter_identities_for_user(all_identities, &username);
     let from_email = identities
@@ -283,6 +299,17 @@ pub async fn save_draft(
         references: Some(form.references_header.as_str()).filter(|s| !s.is_empty()),
     };
     let attachments = build_attachments_from_form(&form);
+    debug!(
+        "save_draft: {} attachment(s) from form",
+        attachments.len()
+    );
+    for att in &attachments {
+        debug!(
+            "save_draft: attachment blob_id={}, name={}, type={}",
+            att.blob_id, att.name, att.content_type
+        );
+    }
+    let body_html = sanitized_body_html(&form.body_html);
     let content = jmap::EmailContent {
         from_email,
         to: &form.to,
@@ -290,6 +317,7 @@ pub async fn save_draft(
         bcc: &form.bcc,
         subject: &form.subject,
         body_text: &form.body,
+        body_html: body_html.as_deref(),
         threading: &threading,
         attachments,
     };
@@ -318,7 +346,7 @@ pub async fn delete_email(
     Path(id): Path<EmailId>,
     Query(params): Query<DeleteParams>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    debug!("delete_email: id={id}");
+    trace!("delete_email: id={id}");
     let trash_id = jmap::find_mailbox_by_role(&client, "trash").await?;
 
     let flash_msg = if params.mailbox_id == trash_id {
@@ -356,7 +384,7 @@ pub async fn archive_email(
     Path(id): Path<EmailId>,
     Form(params): Form<ArchiveParams>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    debug!("archive_email: id={id}");
+    trace!("archive_email: id={id}");
     let archive_id = jmap::find_mailbox_by_role(&client, "archive").await?;
     jmap::move_email(&client, &id, &params.mailbox_id, &archive_id).await?;
     push_flash(&session, FlashMessage::success("Email archived")).await;
@@ -384,7 +412,7 @@ pub async fn spam_email(
     Path(id): Path<EmailId>,
     Form(params): Form<SpamParams>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    debug!("spam_email: id={id}");
+    trace!("spam_email: id={id}");
     let junk_id = jmap::find_mailbox_by_role(&client, "junk").await?;
     jmap::move_email(&client, &id, &params.mailbox_id, &junk_id).await?;
     push_flash(&session, FlashMessage::success("Moved to spam")).await;
@@ -407,7 +435,7 @@ pub async fn unspam_email(
     Path(id): Path<EmailId>,
     Form(params): Form<SpamParams>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    debug!("unspam_email: id={id}");
+    trace!("unspam_email: id={id}");
     let inbox_id = jmap::find_mailbox_by_role(&client, "inbox").await?;
     jmap::move_email(&client, &id, &params.mailbox_id, &inbox_id).await?;
     push_flash(&session, FlashMessage::success("Moved to inbox")).await;
@@ -436,7 +464,7 @@ pub async fn move_email(
     Path(id): Path<EmailId>,
     Form(params): Form<MoveEmailForm>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    debug!("move_email: id={id} to={}", params.target_mailbox_id);
+    trace!("move_email: id={id} to={}", params.target_mailbox_id);
     jmap::move_email(&client, &id, &params.mailbox_id, &params.target_mailbox_id).await?;
     push_flash(&session, FlashMessage::success("Email moved")).await;
 
@@ -470,7 +498,7 @@ pub async fn toggle_flag(
     Path(id): Path<EmailId>,
     Form(params): Form<ToggleFlagParams>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    debug!("toggle_flag: id={id}, flagged={}", params.flagged);
+    trace!("toggle_flag: id={id}, flagged={}", params.flagged);
     jmap::toggle_email_flagged(&client, &id, params.flagged).await?;
     let label = if params.flagged { "Starred" } else { "Unstarred" };
     push_flash(&session, FlashMessage::success(label)).await;
@@ -485,7 +513,7 @@ pub async fn mark_unread(
     AuthenticatedClient(client, _, session): AuthenticatedClient,
     Path(id): Path<EmailId>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    debug!("mark_unread: id={id}");
+    trace!("mark_unread: id={id}");
     jmap::mark_email_unread(&client, &id).await?;
     push_flash(&session, FlashMessage::success("Marked as unread")).await;
     Ok(Response::builder()
@@ -539,24 +567,53 @@ fn format_forwarded_body(email: &EmailDetail) -> String {
     )
 }
 
+fn sanitized_body_html(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(sanitize_compose_html(trimmed))
+    }
+}
+
+fn quote_body_html(html: &str, from: &str, date: &str) -> String {
+    format!("<br><br><p>On {date}, {from} wrote:</p><blockquote>{html}</blockquote>")
+}
+
+fn format_forwarded_body_html(email: &EmailDetail) -> String {
+    let body = email.body_html.as_deref().unwrap_or(&email.body_text);
+    format!(
+        "<br><br><hr><p><b>---------- Forwarded message ----------</b><br>\
+         From: {}<br>Date: {}<br>Subject: {}<br>To: {}</p><br>{}",
+        email.from, email.received_at, email.subject, email.to, body
+    )
+}
+
 fn build_attachments_from_form(form: &ComposeFormData) -> Vec<jmap::UploadedAttachment> {
-    form.attachment_blob_ids
-        .iter()
-        .enumerate()
-        .map(|(i, blob_id)| jmap::UploadedAttachment {
-            blob_id: BlobId::from(blob_id.as_str()),
-            name: form
-                .attachment_names
-                .get(i)
-                .cloned()
-                .unwrap_or_default(),
-            content_type: form
-                .attachment_types
-                .get(i)
-                .cloned()
-                .unwrap_or_else(|| "application/octet-stream".to_string()),
-        })
-        .collect()
+    if form.attachments_json.trim().is_empty() {
+        return Vec::new();
+    }
+    match serde_json::from_str::<Vec<AttachmentJson>>(&form.attachments_json) {
+        Ok(items) => items
+            .into_iter()
+            .map(|a| jmap::UploadedAttachment {
+                blob_id: BlobId::from(a.blob_id.as_str()),
+                name: a.name,
+                content_type: a.content_type,
+            })
+            .collect(),
+        Err(e) => {
+            error!("Failed to parse attachments_json: {e}");
+            Vec::new()
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct AttachmentJson {
+    blob_id: String,
+    name: String,
+    content_type: String,
 }
 
 pub async fn upload_attachment(
@@ -644,12 +701,16 @@ async fn compose_for_email(
                 email.from,
                 quote_body(&email.body_text)
             );
+            let body_html = email.body_html.as_deref().map(|html| {
+                quote_body_html(html, &email.from, &email.received_at)
+            }).unwrap_or_default();
             (
                 "Reply".to_string(),
                 ComposeFormData {
                     to: email.from_email.clone(),
                     subject: prepend_subject_prefix(&email.subject, "Re"),
                     body: quoted,
+                    body_html,
                     in_reply_to,
                     references_header,
                     ..Default::default()
@@ -666,6 +727,9 @@ async fn compose_for_email(
                 email.from,
                 quote_body(&email.body_text)
             );
+            let body_html = email.body_html.as_deref().map(|html| {
+                quote_body_html(html, &email.from, &email.received_at)
+            }).unwrap_or_default();
             let all_recipients = if email.cc_emails.is_empty() {
                 email.to_emails.clone()
             } else {
@@ -679,6 +743,7 @@ async fn compose_for_email(
                     cc,
                     subject: prepend_subject_prefix(&email.subject, "Re"),
                     body: quoted,
+                    body_html,
                     in_reply_to,
                     references_header,
                     ..Default::default()
@@ -690,6 +755,7 @@ async fn compose_for_email(
             ComposeFormData {
                 subject: prepend_subject_prefix(&email.subject, "Fwd"),
                 body: format_forwarded_body(&email),
+                body_html: format_forwarded_body_html(&email),
                 ..Default::default()
             },
         ),
@@ -707,7 +773,7 @@ pub async fn reply(
     AuthenticatedClient(client, username, session): AuthenticatedClient,
     Path(id): Path<EmailId>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    debug!("reply: id={id}");
+    trace!("reply: id={id}");
     compose_for_email(&client, &username, &session, &id, ComposeMode::Reply).await
 }
 
@@ -715,7 +781,7 @@ pub async fn reply_all(
     AuthenticatedClient(client, username, session): AuthenticatedClient,
     Path(id): Path<EmailId>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    debug!("reply_all: id={id}");
+    trace!("reply_all: id={id}");
     compose_for_email(&client, &username, &session, &id, ComposeMode::ReplyAll).await
 }
 
@@ -723,7 +789,7 @@ pub async fn forward(
     AuthenticatedClient(client, username, session): AuthenticatedClient,
     Path(id): Path<EmailId>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    debug!("forward: id={id}");
+    trace!("forward: id={id}");
     compose_for_email(&client, &username, &session, &id, ComposeMode::Forward).await
 }
 
@@ -738,7 +804,7 @@ pub async fn bulk_action(
     AuthenticatedClient(client, _, session): AuthenticatedClient,
     Form(form): Form<BulkActionForm>,
 ) -> std::result::Result<impl IntoResponse, MissiveError> {
-    debug!(
+    trace!(
         "bulk_action: action={}, mailbox={}",
         form.action, form.mailbox_id
     );
@@ -971,5 +1037,120 @@ mod tests {
         assert!(result.contains("Subject: Hello World"));
         assert!(result.contains("To: Bob <bob@example.com>"));
         assert!(result.contains("Line one\nLine two"));
+    }
+
+    // --- quote_body_html ---
+
+    #[test]
+    fn quote_body_html_structure() {
+        let result = quote_body_html("<p>Hello</p>", "Alice", "Jan 1, 2025");
+        assert!(result.contains("<blockquote><p>Hello</p></blockquote>"));
+        assert!(result.contains("On Jan 1, 2025, Alice wrote:"));
+    }
+
+    // --- format_forwarded_body_html ---
+
+    #[test]
+    fn format_forwarded_body_html_structure() {
+        let mut email = make_email_detail();
+        email.body_html = Some("<p>HTML body</p>".to_string());
+        let result = format_forwarded_body_html(&email);
+        assert!(result.contains("---------- Forwarded message ----------"));
+        assert!(result.contains("From: Alice <alice@example.com>"));
+        assert!(result.contains("<p>HTML body</p>"));
+    }
+
+    #[test]
+    fn format_forwarded_body_html_falls_back_to_text() {
+        let email = make_email_detail();
+        let result = format_forwarded_body_html(&email);
+        assert!(result.contains("Line one\nLine two"));
+    }
+
+    // --- sanitized_body_html ---
+
+    #[test]
+    fn sanitized_body_html_returns_none_for_empty() {
+        assert!(sanitized_body_html("").is_none());
+        assert!(sanitized_body_html("   ").is_none());
+    }
+
+    #[test]
+    fn sanitized_body_html_returns_some_for_content() {
+        let result = sanitized_body_html("<p>Hello</p>");
+        assert!(result.is_some());
+        assert!(result.unwrap().contains("<p>Hello</p>"));
+    }
+
+    // --- build_attachments_from_form ---
+
+    #[test]
+    fn build_attachments_from_form_parses_json() {
+        let form = ComposeFormData {
+            attachments_json: r#"[{"blob_id":"blob-1","name":"file1.pdf","content_type":"application/pdf"},{"blob_id":"blob-2","name":"file2.png","content_type":"image/png"}]"#.to_string(),
+            ..Default::default()
+        };
+        let attachments = build_attachments_from_form(&form);
+        assert_eq!(attachments.len(), 2);
+        assert_eq!(attachments[0].blob_id.as_str(), "blob-1");
+        assert_eq!(attachments[0].name, "file1.pdf");
+        assert_eq!(attachments[0].content_type, "application/pdf");
+        assert_eq!(attachments[1].blob_id.as_str(), "blob-2");
+        assert_eq!(attachments[1].name, "file2.png");
+        assert_eq!(attachments[1].content_type, "image/png");
+    }
+
+    #[test]
+    fn build_attachments_from_form_empty() {
+        let form = ComposeFormData::default();
+        let attachments = build_attachments_from_form(&form);
+        assert!(attachments.is_empty());
+    }
+
+    #[test]
+    fn build_attachments_from_form_empty_json_array() {
+        let form = ComposeFormData {
+            attachments_json: "[]".to_string(),
+            ..Default::default()
+        };
+        let attachments = build_attachments_from_form(&form);
+        assert!(attachments.is_empty());
+    }
+
+    #[test]
+    fn build_attachments_from_form_invalid_json_returns_empty() {
+        let form = ComposeFormData {
+            attachments_json: "not valid json".to_string(),
+            ..Default::default()
+        };
+        let attachments = build_attachments_from_form(&form);
+        assert!(attachments.is_empty());
+    }
+
+    // --- ComposeFormData deserialization with attachments_json ---
+
+    #[test]
+    fn compose_form_data_deserializes_with_attachments_json() {
+        let json = r#"[{"blob_id":"blob-1","name":"file1.pdf","content_type":"application/pdf"},{"blob_id":"blob-2","name":"file2.png","content_type":"image/png"}]"#;
+        let encoded_json = serde_urlencoded::to_string([("attachments_json", json)]).unwrap();
+        let form_data = format!("to=test%40example.com&subject=Hello&{encoded_json}");
+        let form: ComposeFormData = serde_urlencoded::from_str(&form_data)
+            .expect("deserialization should succeed");
+        let attachments = build_attachments_from_form(&form);
+        assert_eq!(attachments.len(), 2);
+        assert_eq!(attachments[0].blob_id.as_str(), "blob-1");
+        assert_eq!(attachments[0].name, "file1.pdf");
+        assert_eq!(attachments[1].blob_id.as_str(), "blob-2");
+        assert_eq!(attachments[1].name, "file2.png");
+    }
+
+    #[test]
+    fn compose_form_data_deserializes_no_attachments() {
+        let form_data = "to=test%40example.com&subject=Hello";
+        let form: ComposeFormData = serde_urlencoded::from_str(form_data)
+            .expect("deserialization should succeed");
+        assert!(form.attachments_json.is_empty());
+        let attachments = build_attachments_from_form(&form);
+        assert!(attachments.is_empty());
     }
 }

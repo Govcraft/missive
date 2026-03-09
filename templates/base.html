@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
     <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="/static/css/app.css">
+    <link rel="stylesheet" href="/static/css/trix.css">
+    <script src="/static/js/trix.js"></script>
 </head>
 <body class="h-full text-gray-900">
     {% block content %}{% endblock %}
@@ -208,6 +210,54 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
         var bar = document.getElementById('bulk-actions-bar');
         if (bar) bar.classList.add('hidden');
     }
+});
+
+// Attachment management: collect data-* attributes into JSON hidden input
+function updateAttachmentsJson() {
+    var input = document.getElementById('attachments-json');
+    if (!input) return;
+    var rows = document.querySelectorAll('#attachment-list [data-blob-id]');
+    var attachments = [];
+    rows.forEach(function(row) {
+        attachments.push({
+            blob_id: row.getAttribute('data-blob-id'),
+            name: row.getAttribute('data-name'),
+            content_type: row.getAttribute('data-content-type')
+        });
+    });
+    input.value = JSON.stringify(attachments);
+}
+// Update JSON after an attachment upload is swapped in
+document.body.addEventListener('htmx:afterSwap', function(event) {
+    if (event.detail.target && event.detail.target.id === 'attachment-list') {
+        updateAttachmentsJson();
+    }
+});
+// Ensure fresh attachment data right before send/draft submission
+document.body.addEventListener('htmx:configRequest', function(event) {
+    var path = event.detail.path;
+    if (path === '/api/v1/send' || path === '/api/v1/drafts') {
+        updateAttachmentsJson();
+    }
+});
+// Trix attachment button: upload file to our blob endpoint, add to attachment list
+document.addEventListener('trix-attachment-add', function(event) {
+    var attachment = event.attachment;
+    var file = attachment.file;
+    if (!file) return;
+    // Remove the inline attachment from the editor — we handle attachments separately
+    attachment.remove();
+    var formData = new FormData();
+    formData.append('file', file);
+    fetch('/api/v1/compose/upload', { method: 'POST', body: formData })
+        .then(function(response) { return response.text(); })
+        .then(function(html) {
+            var list = document.getElementById('attachment-list');
+            if (list) {
+                list.insertAdjacentHTML('beforeend', html);
+                updateAttachmentsJson();
+            }
+        });
 });
 </script>
 </body>

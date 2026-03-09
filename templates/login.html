@@ -3,33 +3,28 @@
 {% block title %}Login - Missive{% endblock %}
 
 {% block content %}
-<div class="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
-    <div class="sm:mx-auto sm:w-full sm:max-w-sm">
-        <h1 class="text-center text-3xl font-bold tracking-tight text-slate-800">Missive</h1>
-        <h2 class="mt-4 text-center text-base text-gray-500">Sign in with your mail credentials</h2>
-    </div>
+<div class="flex min-h-full items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+    <div class="w-full max-w-sm space-y-10">
+        <div>
+            <img src="/static/images/logo.png" alt="Missive" class="mx-auto h-32 w-auto" />
+            <h2 class="mt-10 text-center text-2xl/9 font-bold tracking-tight text-gray-900">Sign in to your account</h2>
+        </div>
 
-    <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
         {% if let Some(err) = error %}
-        <div class="mb-6 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200 ring-inset">
+        <div class="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200 ring-inset">
             {{ err }}
         </div>
         {% endif %}
 
         <form action="/login" method="POST" class="space-y-6">
             <div>
-                <label for="username" class="block text-sm/6 font-medium text-gray-900">Username</label>
-                <div class="mt-2">
-                    <input id="username" type="text" name="username" required autocomplete="username"
-                        class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-slate-600 sm:text-sm/6" />
+                <div>
+                    <input id="username" type="text" name="username" required placeholder="Username" autocomplete="username" aria-label="Username"
+                        class="block w-full rounded-t-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:relative focus:outline-2 focus:-outline-offset-2 focus:outline-slate-600 sm:text-sm/6" />
                 </div>
-            </div>
-
-            <div>
-                <label for="password" class="block text-sm/6 font-medium text-gray-900">Password</label>
-                <div class="mt-2">
-                    <input id="password" type="password" name="password" required autocomplete="current-password"
-                        class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-slate-600 sm:text-sm/6" />
+                <div class="-mt-px">
+                    <input id="password" type="password" name="password" required placeholder="Password" autocomplete="current-password" aria-label="Password"
+                        class="block w-full rounded-b-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:relative focus:outline-2 focus:-outline-offset-2 focus:outline-slate-600 sm:text-sm/6" />
                 </div>
             </div>
 

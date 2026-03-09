@@ -106,6 +106,20 @@ pub fn sanitize_email_html(raw_html: &str, cid_map: &HashMap<String, String>) ->
     builder.clean(&html).to_string()
 }
 
+pub fn sanitize_compose_html(html: &str) -> String {
+    Builder::new()
+        .add_tags([
+            "div", "span", "br", "hr", "img", "pre", "code", "blockquote", "figure",
+            "figcaption",
+        ])
+        .add_tag_attributes("img", &["src", "alt", "width", "height"])
+        .add_tag_attributes("a", &["href"])
+        .add_generic_attributes(["class", "style"].iter())
+        .strip_comments(true)
+        .clean(html)
+        .to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -184,6 +198,24 @@ mod tests {
         assert!(result.contains("cellpadding"));
         assert!(result.contains("valign"));
         assert!(result.contains("align"));
+    }
+
+    #[test]
+    fn sanitize_compose_strips_scripts() {
+        let result = sanitize_compose_html(r#"<p>Hello</p><script>alert('xss')</script>"#);
+        assert!(!result.contains("<script>"));
+        assert!(result.contains("<p>Hello</p>"));
+    }
+
+    #[test]
+    fn sanitize_compose_allows_formatting() {
+        let result = sanitize_compose_html(
+            r#"<b>Bold</b> <i>Italic</i> <a href="https://example.com">Link</a> <blockquote>Quote</blockquote>"#,
+        );
+        assert!(result.contains("<b>Bold</b>"));
+        assert!(result.contains("<i>Italic</i>"));
+        assert!(result.contains("https://example.com"));
+        assert!(result.contains("<blockquote>Quote</blockquote>"));
     }
 
     #[test]

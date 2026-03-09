@@ -10,14 +10,16 @@ askama = "0.15.4"
 axum = { version = "0.8.8", features = ["multipart"] }
 chrono = "0.4.44"
 dashmap = "6.1.0"
+html2text = "0.16.7"
 jmap-client = "0.4.0"
 secrecy = { version = "0.10.3", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
 toml = "1.0.6"
 tower-http = { version = "0.6.8", features = ["fs"] }
 
 [dev-dependencies]
 dotenvy = "0.15.7"
-serde_json = "1.0.149"
+serde_urlencoded = "0.7.1"
 tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread"] }
 url = "2.5.8"
