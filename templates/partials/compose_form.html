@@ -61,6 +61,21 @@
                 </div>
             </div>
 
+            <div>
+                <label class="block text-sm/6 font-medium text-gray-900">Attachments</label>
+                <div id="attachment-list" class="mt-2 space-y-2"></div>
+                <div class="mt-2">
+                    <input type="file" id="file-upload"
+                        class="block w-full text-sm text-gray-500 file:mr-4 file:rounded-md file:border-0 file:bg-slate-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-100"
+                        hx-post="/api/v1/compose/upload"
+                        hx-target="#attachment-list"
+                        hx-swap="beforeend"
+                        hx-encoding="multipart/form-data"
+                        hx-trigger="change"
+                        name="file" />
+                </div>
+            </div>
+
             <div class="flex items-center justify-end gap-3 pt-4">
                 <button type="button"
                     hx-get="/api/v1/compose/cancel"

@@ -7,7 +7,7 @@ edition = "2024"
 acton-service = { version = "0.16.0", features = ["htmx-full"] }
 ammonia = "4.1.2"
 askama = "0.15.4"
-axum = "0.8.8"
+axum = { version = "0.8.8", features = ["multipart"] }
 chrono = "0.4.44"
 dashmap = "6.1.0"
 jmap-client = "0.4.0"
