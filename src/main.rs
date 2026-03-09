@@ -1,6 +1,8 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
+use std::sync::Arc;
+
 use acton_service::prelude::*;
 use acton_service::session::{SessionConfig, create_memory_session_layer};
 use axum::Extension;
@@ -22,6 +24,7 @@ async fn main() -> Result<()> {
     let session_config = SessionConfig::default();
     let session_layer = create_memory_session_layer(&session_config);
     let client_cache = new_client_cache();
+    let broadcaster = Arc::new(SseBroadcaster::new());
 
     let mut config = Config::<MissiveConfig>::load()?;
     info!(
@@ -83,6 +86,8 @@ async fn main() -> Result<()> {
                 .route("/send", post(routes::emails::send_email))
                 .route("/drafts", post(routes::emails::save_draft))
                 .route("/flash", get(routes::emails::get_flash))
+                .route("/events", get(routes::events::event_stream))
+                .layer(Extension(broadcaster))
                 .layer(Extension(client_cache.clone()))
                 .layer(session_layer.clone())
         })

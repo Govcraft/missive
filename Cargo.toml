@@ -10,6 +10,7 @@ askama = "0.15.4"
 axum = { version = "0.8.8", features = ["multipart"] }
 chrono = "0.4.44"
 dashmap = "6.1.0"
+futures-util = "0.3.32"
 html2text = "0.16.7"
 jmap-client = "0.4.0"
 secrecy = { version = "0.10.3", features = ["serde"] }

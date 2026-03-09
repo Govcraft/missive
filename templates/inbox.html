@@ -10,10 +10,12 @@
 
     <input type="hidden" name="mailbox_id" id="active-mailbox-id" value="" />
 
-    <main class="missive-grid">
+    <main class="missive-grid" hx-ext="sse" sse-connect="/api/v1/events">
         <!-- Mailbox sidebar -->
         <div id="mailbox-pane" class="border-r border-gray-200 bg-gray-50 overflow-hidden overflow-y-auto shadow-sm sm:rounded-md"
-             hx-get="/api/v1/mailboxes" hx-trigger="load, mailboxesUpdated from:body" hx-swap="innerHTML">
+             hx-get="/api/v1/mailboxes"
+             hx-trigger="load, mailboxesUpdated from:body, sse:emailsUpdated, sse:mailboxesUpdated"
+             hx-swap="innerHTML">
             <div class="p-4 text-sm text-gray-400">Loading mailboxes...</div>
         </div>
 
@@ -22,6 +24,13 @@
             <div class="flex items-center justify-center h-full text-sm text-gray-400">
                 Select a mailbox
             </div>
+        </div>
+
+        <!-- SSE-driven email list refresh (only when a mailbox is selected) -->
+        <div hx-get="/api/v1/emails" hx-include="#active-mailbox-id"
+             hx-trigger="sse:emailsUpdated[document.getElementById('active-mailbox-id').value !== ''] delay:500ms"
+             hx-target="#email-list-pane" hx-swap="innerHTML"
+             style="display:none">
         </div>
 
         <!-- Email detail pane -->

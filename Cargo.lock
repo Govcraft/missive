@@ -1737,6 +1737,7 @@ dependencies = [
  "chrono",
  "dashmap",
  "dotenvy",
+ "futures-util",
  "html2text",
  "jmap-client",
  "secrecy",
