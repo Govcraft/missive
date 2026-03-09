@@ -140,6 +140,13 @@ document.addEventListener('keydown', function(e) {
     var hasActions = detailPane.querySelector('[title="Reply"], [title="Reply all"], [title="Forward"]');
     if (!hasActions) return;
 
+    // ! — report spam
+    if (key === '!') {
+        var spamBtn = detailPane.querySelector('[title="Report spam"]');
+        if (spamBtn) spamBtn.click();
+        return;
+    }
+
     var actionMap = {
         'r': 'Reply',
         'a': 'Reply all',

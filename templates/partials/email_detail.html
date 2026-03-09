@@ -59,6 +59,20 @@
                 </svg>
             </button>
             <button type="button"
+                    title="Report spam"
+                    class="relative -ml-px inline-flex items-center bg-white px-4 py-2 text-gray-700 inset-ring-1 inset-ring-gray-300 hover:bg-gray-50 focus:z-10"
+                    hx-post="/api/v1/emails/{{ email.id }}/spam"
+                    hx-include="#active-mailbox-id"
+                    hx-target="#email-detail-pane"
+                    hx-swap="innerHTML"
+                    hx-confirm="Report as spam?">
+                <span class="sr-only">Report spam</span>
+                <!-- Heroicons: exclamation-triangle -->
+                <svg class="size-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                </svg>
+            </button>
+            <button type="button"
                     title="Delete"
                     class="relative -ml-px inline-flex items-center rounded-r-md bg-white px-4 py-2 text-gray-700 inset-ring-1 inset-ring-gray-300 hover:bg-gray-50 focus:z-10"
                     hx-delete="/api/v1/emails/{{ email.id }}"

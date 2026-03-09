@@ -355,6 +355,57 @@ pub async fn archive_email(
 }
 
 #[derive(Deserialize)]
+pub struct SpamParams {
+    pub mailbox_id: MailboxId,
+}
+
+pub async fn spam_email(
+    AuthenticatedClient(client, _, session): AuthenticatedClient,
+    Path(id): Path<EmailId>,
+    Form(params): Form<SpamParams>,
+) -> std::result::Result<impl IntoResponse, MissiveError> {
+    debug!("spam_email: id={id}");
+    let junk_id = jmap::find_mailbox_by_role(&client, "junk").await?;
+    jmap::move_email(&client, &id, &params.mailbox_id, &junk_id).await?;
+    push_flash(&session, FlashMessage::success("Moved to spam")).await;
+
+    let html = format!(
+        "<div class=\"flex items-center justify-center h-full text-sm text-gray-400\">\
+            Select an email to read\
+         </div>\
+         <li id=\"email-row-{id}\" hx-swap-oob=\"delete\"></li>"
+    );
+
+    Ok(Response::builder()
+        .header("Content-Type", "text/html")
+        .header("HX-Trigger", "flashUpdated, mailboxesUpdated")
+        .body(Body::from(html))?)
+}
+
+pub async fn unspam_email(
+    AuthenticatedClient(client, _, session): AuthenticatedClient,
+    Path(id): Path<EmailId>,
+    Form(params): Form<SpamParams>,
+) -> std::result::Result<impl IntoResponse, MissiveError> {
+    debug!("unspam_email: id={id}");
+    let inbox_id = jmap::find_mailbox_by_role(&client, "inbox").await?;
+    jmap::move_email(&client, &id, &params.mailbox_id, &inbox_id).await?;
+    push_flash(&session, FlashMessage::success("Moved to inbox")).await;
+
+    let html = format!(
+        "<div class=\"flex items-center justify-center h-full text-sm text-gray-400\">\
+            Select an email to read\
+         </div>\
+         <li id=\"email-row-{id}\" hx-swap-oob=\"delete\"></li>"
+    );
+
+    Ok(Response::builder()
+        .header("Content-Type", "text/html")
+        .header("HX-Trigger", "flashUpdated, mailboxesUpdated")
+        .body(Body::from(html))?)
+}
+
+#[derive(Deserialize)]
 pub struct MoveEmailForm {
     pub target_mailbox_id: MailboxId,
     pub mailbox_id: MailboxId,
