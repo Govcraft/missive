@@ -115,21 +115,31 @@ pub async fn event_stream(
 
     // Convert broadcast receiver into SSE stream using unfold (per the docs).
     // The shutdown_tx is carried in the state so it drops when the stream ends.
+    // A Ctrl+C listener ensures the stream terminates during graceful shutdown,
+    // which drops shutdown_tx and signals the spawned JMAP task to exit.
     let stream = stream::unfold((rx, Some(shutdown_tx)), |(mut rx, shutdown_tx)| async move {
         loop {
-            match rx.recv().await {
-                Ok(msg) => {
-                    let mut event = SseEvent::default().data(msg.data);
-                    if let Some(event_type) = msg.event_type {
-                        event = event.event(event_type);
+            tokio::select! {
+                result = rx.recv() => {
+                    match result {
+                        Ok(msg) => {
+                            let mut event = SseEvent::default().data(msg.data);
+                            if let Some(event_type) = msg.event_type {
+                                event = event.event(event_type);
+                            }
+                            return Some((Ok(event), (rx, shutdown_tx)));
+                        }
+                        Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
+                            warn!("SSE: broadcast receiver lagged, skipped {n} message(s)");
+                            continue;
+                        }
+                        Err(tokio::sync::broadcast::error::RecvError::Closed) => return None,
                     }
-                    return Some((Ok(event), (rx, shutdown_tx)));
                 }
-                Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
-                    warn!("SSE: broadcast receiver lagged, skipped {n} message(s)");
-                    continue;
+                _ = tokio::signal::ctrl_c() => {
+                    info!("SSE: shutdown signal received, closing SSE stream");
+                    return None;
                 }
-                Err(tokio::sync::broadcast::error::RecvError::Closed) => return None,
             }
         }
     });
