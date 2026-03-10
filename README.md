@@ -2,8 +2,6 @@
   <img src="branding/missive_logomark.png" alt="Missive" width="128" height="128">
 </p>
 
-<h1 align="center">Missive</h1>
-
 <p align="center">
   A fast, self-hostable webmail client built with Rust and the JMAP protocol.
 </p>
