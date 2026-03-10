@@ -5,46 +5,19 @@
 @theme {
     --font-sans: "Inter", sans-serif;
 
-    /* ── Raw color scales ── */
+    /* ── Raw color scale — pure grayscale for contrast/IA work ── */
 
-    /* Neutral (blue-tinted slate) — 60% surfaces, text, borders */
-    --color-neutral-950: oklch(0.2640 0.0579 251.70);
-    --color-neutral-900: oklch(0.2939 0.0677 253.65);
-    --color-neutral-800: oklch(0.3419 0.0757 251.02);
-    --color-neutral-700: oklch(0.3971 0.0854 246.97);
-    --color-neutral-600: oklch(0.4536 0.0993 246.77);
-    --color-neutral-500: oklch(0.5232 0.1069 244.91);
-    --color-neutral-400: oklch(0.6262 0.0982 241.66);
-    --color-neutral-300: oklch(0.7428 0.0781 239.13);
-    --color-neutral-200: oklch(0.8537 0.0460 238.17);
-    --color-neutral-100: oklch(0.9275 0.0205 243.51);
-    --color-neutral-50: oklch(0.9641 0.0094 243.02);
-
-    /* Navy (deep blue) — 30% interactive emphasis */
-    --color-navy-950: oklch(0.22 0.07 258);
-    --color-navy-900: oklch(0.26 0.10 258);
-    --color-navy-800: oklch(0.32 0.12 256);
-    --color-navy-700: oklch(0.38 0.14 255);
-    --color-navy-600: oklch(0.45 0.16 254);
-    --color-navy-500: oklch(0.53 0.15 253);
-    --color-navy-400: oklch(0.63 0.13 251);
-    --color-navy-300: oklch(0.73 0.10 249);
-    --color-navy-200: oklch(0.83 0.06 247);
-    --color-navy-100: oklch(0.92 0.03 248);
-    --color-navy-50: oklch(0.96 0.015 250);
-
-    /* Copper (warm reddish-gold) — 10% CTAs, highlights */
-    --color-copper-950: oklch(0.25 0.05 42);
-    --color-copper-900: oklch(0.30 0.07 42);
-    --color-copper-800: oklch(0.38 0.10 43);
-    --color-copper-700: oklch(0.46 0.12 44);
-    --color-copper-600: oklch(0.55 0.14 45);
-    --color-copper-500: oklch(0.63 0.13 46);
-    --color-copper-400: oklch(0.72 0.11 48);
-    --color-copper-300: oklch(0.80 0.08 50);
-    --color-copper-200: oklch(0.87 0.05 52);
-    --color-copper-100: oklch(0.93 0.03 55);
-    --color-copper-50: oklch(0.97 0.01 58);
+    --color-neutral-950: oklch(0.13 0 0);
+    --color-neutral-900: oklch(0.20 0 0);
+    --color-neutral-800: oklch(0.27 0 0);
+    --color-neutral-700: oklch(0.37 0 0);
+    --color-neutral-600: oklch(0.45 0 0);
+    --color-neutral-500: oklch(0.55 0 0);
+    --color-neutral-400: oklch(0.64 0 0);
+    --color-neutral-300: oklch(0.75 0 0);
+    --color-neutral-200: oklch(0.85 0 0);
+    --color-neutral-100: oklch(0.92 0 0);
+    --color-neutral-50: oklch(0.97 0 0);
 
     /* ── Semantic surface tokens (light defaults) ── */
     --color-surface: oklch(1 0 0);
@@ -66,50 +39,50 @@
     --color-border-strong: var(--color-neutral-300);
     --color-ring: var(--color-neutral-500);
 
-    /* ── Primary (navy) semantic tokens ── */
-    --color-primary: var(--color-navy-600);
-    --color-primary-hover: var(--color-navy-500);
-    --color-primary-surface: var(--color-navy-50);
+    /* ── Primary — mapped to neutral for grayscale pass ── */
+    --color-primary: var(--color-neutral-700);
+    --color-primary-hover: var(--color-neutral-600);
+    --color-primary-surface: var(--color-neutral-50);
 
-    /* ── Accent (copper) semantic tokens ── */
-    --color-accent: var(--color-copper-600);
-    --color-accent-hover: var(--color-copper-500);
-    --color-accent-surface: var(--color-copper-50);
+    /* ── Accent — mapped to neutral for grayscale pass ── */
+    --color-accent: var(--color-neutral-700);
+    --color-accent-hover: var(--color-neutral-600);
+    --color-accent-surface: var(--color-neutral-100);
 
-    /* ── Status colors ── */
-    --color-success: oklch(0.72 0.17 142);
-    --color-danger: oklch(0.63 0.21 25);
+    /* ── Status colors — grayscale stand-ins ── */
+    --color-success: oklch(0.55 0 0);
+    --color-danger: oklch(0.45 0 0);
 }
 
-/* ── Dark mode overrides ── */
+/* ── Dark mode overrides — grayscale pass ── */
 .dark {
-    --color-surface: oklch(0.205 0.006 260);
-    --color-surface-nav: var(--color-navy-950);
-    --color-surface-dim: oklch(0.175 0.006 260);
-    --color-surface-raised: oklch(0.245 0.006 260);
-    --color-surface-hover: oklch(0.28 0.006 260);
-    --color-surface-invert: oklch(0.92 0.006 260);
+    --color-surface: oklch(0.16 0 0);
+    --color-surface-nav: oklch(0.13 0 0);
+    --color-surface-dim: oklch(0.13 0 0);
+    --color-surface-raised: oklch(0.21 0 0);
+    --color-surface-hover: oklch(0.24 0 0);
+    --color-surface-invert: var(--color-neutral-100);
 
-    --color-on-surface: oklch(0.93 0.006 260);
-    --color-on-surface-secondary: oklch(0.75 0.006 260);
-    --color-on-surface-muted: oklch(0.60 0.006 260);
-    --color-on-surface-faint: oklch(0.50 0.006 260);
-    --color-on-surface-invert: oklch(0.18 0.006 260);
+    --color-on-surface: oklch(0.93 0 0);
+    --color-on-surface-secondary: oklch(0.75 0 0);
+    --color-on-surface-muted: oklch(0.58 0 0);
+    --color-on-surface-faint: oklch(0.45 0 0);
+    --color-on-surface-invert: var(--color-neutral-950);
 
-    --color-border: oklch(0.40 0.006 260);
-    --color-border-strong: oklch(0.48 0.006 260);
-    --color-ring: oklch(0.55 0.006 260);
+    --color-border: oklch(0.30 0 0);
+    --color-border-strong: oklch(0.38 0 0);
+    --color-ring: oklch(0.50 0 0);
 
-    --color-primary: var(--color-navy-400);
-    --color-primary-hover: var(--color-navy-300);
-    --color-primary-surface: var(--color-navy-950);
+    --color-primary: var(--color-neutral-400);
+    --color-primary-hover: var(--color-neutral-300);
+    --color-primary-surface: var(--color-neutral-900);
 
-    --color-accent: var(--color-copper-400);
-    --color-accent-hover: var(--color-copper-300);
-    --color-accent-surface: var(--color-copper-950);
+    --color-accent: var(--color-neutral-400);
+    --color-accent-hover: var(--color-neutral-300);
+    --color-accent-surface: var(--color-neutral-900);
 
-    --color-success: oklch(0.72 0.17 142);
-    --color-danger: oklch(0.70 0.18 25);
+    --color-success: oklch(0.65 0 0);
+    --color-danger: oklch(0.55 0 0);
 }
 
 /* ── Custom scrollbars ── */
