@@ -21,7 +21,7 @@
 
     /* ── Semantic surface tokens (light defaults) ── */
     --color-surface: oklch(1 0 0);
-    --color-surface-nav: var(--color-neutral-200);
+    --color-surface-nav: var(--color-neutral-800);
     --color-surface-dim: var(--color-neutral-50);
     --color-surface-raised: var(--color-neutral-100);
     --color-surface-hover: var(--color-neutral-50);
