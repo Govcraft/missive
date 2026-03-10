@@ -8,10 +8,12 @@ use acton_service::session::{
     SessionManagerLayer, SessionStorage, create_memory_session_layer, create_redis_session_layer,
 };
 use axum::Extension;
+use clap::Parser;
 
 use crate::jmap::{JmapUrl, new_client_cache};
 
 mod assets;
+pub mod cli;
 mod config;
 mod error;
 mod jmap;
@@ -22,13 +24,38 @@ mod session;
 use config::MissiveConfig;
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> std::process::ExitCode {
+    let cli = cli::Cli::parse();
+    cli::dispatch(cli).await.into()
+}
+
+/// Start the Missive web server.
+///
+/// Loads configuration, creates session layers, builds routes,
+/// and starts the HTTP server. This is the main server entry point
+/// called by the `serve` CLI subcommand.
+pub async fn serve(
+    config_path: Option<std::path::PathBuf>,
+) -> std::result::Result<(), cli::error::CliError> {
+    use cli::error::CliError;
+
     info!("Missive v{}", env!("CARGO_PKG_VERSION"));
 
     let client_cache = new_client_cache();
     let broadcaster = Arc::new(SseBroadcaster::new());
 
-    let mut config = Config::<MissiveConfig>::load()?;
+    let mut config = match config_path {
+        Some(ref path) => {
+            let path_str = path.to_string_lossy();
+            info!("Loading config from {path_str}");
+            Config::<MissiveConfig>::load_from(&path_str).map_err(|e| CliError::ServeFailed {
+                message: format!("failed to load config from '{path_str}': {e}"),
+            })?
+        }
+        None => Config::<MissiveConfig>::load().map_err(|e| CliError::ServeFailed {
+            message: format!("failed to load config: {e}"),
+        })?,
+    };
     info!(
         "Loaded config: service={}, jmap_url={}",
         config.service.name, config.custom.jmap_url
@@ -58,21 +85,29 @@ async fn main() -> Result<()> {
 
     if let Err(e) = config.custom.jmap_url.validate() {
         error!("Invalid JMAP URL in config: {e}");
-        return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, e.to_string()).into());
+        return Err(CliError::ConfigInvalid {
+            message: format!("JMAP URL: {e}"),
+        });
     }
 
     let session_config = config.session.clone().unwrap_or_default();
 
     let routes = match session_config.storage {
         SessionStorage::Redis => {
-            let redis_url = session_config.redis_url.as_deref().ok_or_else(|| {
-                std::io::Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    "session.redis_url is required when session.storage = \"redis\"",
-                )
-            })?;
+            let redis_url =
+                session_config
+                    .redis_url
+                    .as_deref()
+                    .ok_or_else(|| CliError::ConfigInvalid {
+                        message: "session.redis_url is required when session.storage = \"redis\""
+                            .to_string(),
+                    })?;
             info!("Using Redis session backend");
-            let layer = create_redis_session_layer(&session_config, redis_url).await?;
+            let layer = create_redis_session_layer(&session_config, redis_url)
+                .await
+                .map_err(|e| CliError::ServeFailed {
+                    message: format!("failed to create Redis session layer: {e}"),
+                })?;
             build_routes(client_cache, broadcaster, layer)
         }
         SessionStorage::Memory => {
@@ -88,6 +123,9 @@ async fn main() -> Result<()> {
         .build()
         .serve()
         .await
+        .map_err(|e| CliError::ServeFailed {
+            message: e.to_string(),
+        })
 }
 
 fn build_routes<S>(
