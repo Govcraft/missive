@@ -18,7 +18,7 @@
 
 Missive is a webmail client that ships as a single binary with all assets embedded. It communicates with your mail server over [JMAP](https://jmap.io/) (RFC 8620), the modern replacement for IMAP, and renders a responsive three-pane UI entirely server-side with HTMX -- no JavaScript framework required.
 
-Built and tested against [Stalwart Mail Server](https://stalw.art/), Missive works with any JMAP-compliant mail server.
+Missive is built on [acton-service](https://govcraft.github.io/acton-service/), a Rust service framework that provides configuration, session management, health checks, and HTMX integration out of the box. Built and tested against [Stalwart Mail Server](https://stalw.art/), Missive works with any JMAP-compliant mail server.
 
 ## Features
 
@@ -92,7 +92,7 @@ The Docker image uses a multi-stage build that produces a minimal Debian-based r
 
 ## Configuration
 
-Missive is configured through a `config.toml` file, environment variables, or both. Environment variables take precedence and use the `ACTON_` prefix.
+Missive is configured through a `config.toml` file, environment variables, or both. Configuration is powered by acton-service's [Figment-based config system](https://govcraft.github.io/acton-service/docs/configuration). Environment variables take precedence and use the `ACTON_` prefix (the convention from acton-service).
 
 ### Config File
 
@@ -289,7 +289,7 @@ Emails are sent using JMAP's two-step pattern: `Email/set` creates the message i
 |-------|-----------|
 | Language | Rust (2024 edition, no `unsafe`) |
 | HTTP framework | axum |
-| Service framework | acton-service |
+| Service framework | [acton-service](https://govcraft.github.io/acton-service/) |
 | Protocol | JMAP (jmap-client crate) |
 | Templates | Askama (compiled, type-checked) |
 | Interactivity | HTMX + SSE |
