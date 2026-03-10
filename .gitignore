@@ -17,5 +17,8 @@ static/css/app.css
 static/js/trix.js
 static/css/trix.css
 
+# Task runner
+Taskfile.yml
+
 # Rust
 target/
