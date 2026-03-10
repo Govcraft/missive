@@ -12,7 +12,7 @@
 
     <main class="missive-grid" data-active-pane="mailboxes" hx-ext="sse" sse-connect="/api/v1/events">
         <!-- Mailbox sidebar -->
-        <div id="mailbox-pane" class="border-r border-border bg-surface-dim overflow-hidden overflow-y-auto shadow-sm sm:rounded-md"
+        <div id="mailbox-pane" class="border-r border-border bg-surface-dim overflow-hidden overflow-y-auto"
              hx-get="/api/v1/mailboxes"
              hx-trigger="load, mailboxesUpdated from:body, sse:mailboxesUpdated"
              hx-swap="innerHTML">
@@ -20,7 +20,7 @@
         </div>
 
         <!-- Email list pane -->
-        <div id="email-list-pane" class="border-r border-border overflow-hidden overflow-y-auto bg-surface shadow-sm sm:rounded-md min-w-0">
+        <div id="email-list-pane" class="border-r border-border overflow-hidden overflow-y-auto bg-surface min-w-0">
             <button type="button"
                     class="md:hidden flex items-center gap-1 px-4 py-2 text-sm text-on-surface-muted"
                     onclick="document.querySelector('.missive-grid').dataset.activePane = 'mailboxes'">
