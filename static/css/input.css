@@ -208,7 +208,7 @@ trix-toolbar .trix-button-group--file-tools {
 }
 
 .email-row.bg-surface-raised {
-    box-shadow: inset 3px 0 0 var(--color-primary);
+    box-shadow: inset 4px 0 0 var(--color-neutral-600);
 }
 
 /* ── Mailbox sidebar active indicator ── */
@@ -217,7 +217,7 @@ trix-toolbar .trix-button-group--file-tools {
 }
 
 .mailbox-item.bg-surface-raised {
-    box-shadow: inset 3px 0 0 var(--color-primary);
+    box-shadow: inset 4px 0 0 var(--color-neutral-600);
 }
 
 /* ── Empty state breathing room ── */

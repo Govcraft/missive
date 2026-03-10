@@ -182,7 +182,7 @@ document.addEventListener('keydown', function(e) {
                 target = key === 'j' ? rows[0] : rows[rows.length - 1];
             }
         }
-        if (target) target.click();
+        if (target) { var link = target.querySelector('a'); if (link) link.click(); }
         return;
     }
 
