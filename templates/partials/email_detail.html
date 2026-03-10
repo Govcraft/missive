@@ -141,13 +141,13 @@
         </select>
     </div>
     <div class="border-t border-border px-4 py-3 sm:px-6">
-        <div class="space-y-1 text-sm text-on-surface-muted">
-            <div><span class="font-medium text-on-surface-muted inline-block w-12">From</span> <span class="text-on-surface">{{ email.from }}</span></div>
-            <div><span class="font-medium text-on-surface-muted inline-block w-12">To</span> <span>{{ email.to }}</span></div>
+        <div class="space-y-1 text-sm">
+            <div><span class="text-on-surface-faint inline-block w-12">From</span> <span class="text-on-surface">{{ email.from }}</span></div>
+            <div><span class="text-on-surface-faint inline-block w-12">To</span> <span class="text-on-surface-secondary">{{ email.to }}</span></div>
             {% if !email.cc.is_empty() %}
-            <div><span class="font-medium text-on-surface-muted inline-block w-12">Cc</span> <span>{{ email.cc }}</span></div>
+            <div><span class="text-on-surface-faint inline-block w-12">Cc</span> <span class="text-on-surface-secondary">{{ email.cc }}</span></div>
             {% endif %}
-            <div><span class="font-medium text-on-surface-muted inline-block w-12">Date</span> <span>{{ email.received_at }}</span></div>
+            <div><span class="text-on-surface-faint inline-block w-12">Date</span> <span class="text-on-surface-secondary">{{ email.received_at }}</span></div>
         </div>
 
         {% if !email.attachments.is_empty() %}

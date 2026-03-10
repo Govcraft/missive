@@ -10,16 +10,14 @@
 </div>
 {% endif %}
 {% else %}
-{% if let Some(total) = total_count %}
-<div class="px-4 py-2 text-xs text-on-surface-faint">
-    {{ total }} {% if *total == 1 %}email{% else %}emails{% endif %}
-</div>
-{% endif %}
-<div class="flex items-center gap-2 px-4 py-1 border-b border-border">
+<div class="flex items-center gap-2 px-4 py-1 border-b border-border bg-surface-raised">
     <input type="checkbox" id="select-all-checkbox"
            class="h-4 w-4 rounded border-border-strong text-primary focus:ring-ring cursor-pointer"
            onchange="document.querySelectorAll('.bulk-checkbox').forEach(function(cb) { cb.checked = this.checked; }.bind(this)); document.body.dispatchEvent(new Event('bulkSelectionChanged'));" />
     <label for="select-all-checkbox" class="text-xs text-on-surface-muted cursor-pointer">Select all</label>
+    {% if let Some(total) = total_count %}
+    <span class="ml-auto text-xs text-on-surface-faint">{{ total }} {% if *total == 1 %}email{% else %}emails{% endif %}</span>
+    {% endif %}
 </div>
 <ul role="list" class="divide-y divide-border">
 {% for email in emails %}
@@ -36,7 +34,7 @@
            class="flex-1 min-w-0 block px-4 py-4 cursor-pointer"
            onclick="document.querySelectorAll('.email-row').forEach(el => el.classList.remove('bg-surface-raised')); this.closest('.email-row').classList.add('bg-surface-raised');">
             <div class="flex items-baseline justify-between mb-1 min-w-0">
-                <span class="text-sm truncate min-w-0{% if email.is_unread %} font-semibold text-on-surface{% else %} text-on-surface-muted{% endif %}">
+                <span class="text-sm truncate min-w-0{% if email.is_unread %} font-semibold text-on-surface{% else %} font-medium text-on-surface-secondary{% endif %}">
                     {{ email.from }}
                 </span>
                 <span class="hidden shrink-0 items-center gap-1 ml-2 whitespace-nowrap sm:flex">
@@ -46,7 +44,7 @@
                     </svg>
                     {% endif %}
                     {% if email.has_attachment %}
-                    <svg class="w-3.5 h-3.5 text-on-surface-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg class="w-3.5 h-3.5 text-on-surface-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                     </svg>
                     {% endif %}
