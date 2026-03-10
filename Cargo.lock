@@ -52,9 +52,9 @@ dependencies = [
 
 [[package]]
 name = "acton-service"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "edc14082f2d27c6ca145d9b6e5dcebca640531132095648682ced724c784a782"
+checksum = "46db88c05e10c794219aebe7d42a4830d0fab14c6a85c0424029ea7772f3f9cf"
 dependencies = [
  "acton-reactive",
  "anyhow",
@@ -92,6 +92,7 @@ dependencies = [
  "tower-sessions-memory-store",
  "tower-sessions-redis-store",
  "tracing",
+ "tracing-journald",
  "tracing-opentelemetry",
  "tracing-subscriber",
  "uuid",
@@ -3875,6 +3876,17 @@ checksum = "db97caf9d906fbde555dd62fa95ddba9eecfd14cb388e4f491a66d74cd5fb79a"
 dependencies = [
  "once_cell",
  "valuable",
+]
+
+[[package]]
+name = "tracing-journald"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d3a81ed245bfb62592b1e2bc153e77656d94ee6a0497683a65a12ccaf2438d0"
+dependencies = [
+ "libc",
+ "tracing-core",
+ "tracing-subscriber",
 ]
 
 [[package]]
