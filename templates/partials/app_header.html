@@ -10,15 +10,8 @@
     <div aria-hidden="true" class="h-6 w-px bg-on-surface/10 lg:hidden"></div>
 
     <div class="flex flex-1 justify-between">
-        <div class="flex shrink-0 items-center gap-x-4">
+        <div class="flex shrink-0 items-center">
             <img src="/static/images/missive_horizontal_logotext_light_bg.png" alt="Missive" class="h-8 w-auto">
-            <button type="button"
-                hx-get="/api/v1/compose"
-                hx-target="#email-detail-pane"
-                hx-swap="innerHTML"
-                class="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-on-surface-invert shadow-xs hover:bg-accent-hover transition-colors">
-                Compose
-            </button>
         </div>
         <div class="flex flex-1 items-center justify-center px-2 lg:ml-6 lg:justify-end">
             <div class="grid w-full max-w-lg grid-cols-1 lg:max-w-xs">

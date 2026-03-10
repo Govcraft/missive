@@ -12,11 +12,25 @@
 
     <main class="missive-grid" data-active-pane="mailboxes" hx-ext="sse" sse-connect="/api/v1/events">
         <!-- Mailbox sidebar -->
-        <div id="mailbox-pane" class="border-r border-border bg-surface-dim overflow-hidden overflow-y-auto"
-             hx-get="/api/v1/mailboxes"
-             hx-trigger="load, mailboxesUpdated from:body, sse:mailboxesUpdated"
-             hx-swap="innerHTML">
-            <div class="p-4 text-sm text-on-surface-faint">Loading mailboxes...</div>
+        <div id="mailbox-pane" class="border-r border-border bg-surface-dim overflow-hidden overflow-y-auto flex flex-col">
+            <div class="px-4 py-4 sm:px-6">
+                <button type="button"
+                    hx-get="/api/v1/compose"
+                    hx-target="#email-detail-pane"
+                    hx-swap="innerHTML"
+                    class="flex w-full items-center justify-center gap-2 rounded-md bg-accent px-3 py-2 text-sm font-semibold text-on-surface-invert shadow-xs hover:bg-accent-hover transition-colors">
+                    <svg class="size-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Compose
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto"
+                 hx-get="/api/v1/mailboxes"
+                 hx-trigger="load, mailboxesUpdated from:body, sse:mailboxesUpdated"
+                 hx-swap="innerHTML">
+                <div class="p-4 text-sm text-on-surface-faint">Loading mailboxes...</div>
+            </div>
         </div>
 
         <!-- Email list pane -->
