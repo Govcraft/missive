@@ -55,7 +55,7 @@ Build and run Missive directly on your machine.
 
 ```bash
 # Clone the repository
-git clone https://github.com/GovCraft/missive.git
+git clone https://github.com/Govcraft/missive.git
 cd missive
 
 # Install JS dependencies and build static assets
@@ -318,4 +318,4 @@ Missive is dual-licensed:
 - **[GNU Affero General Public License v3.0 (AGPL-3.0)](https://www.gnu.org/licenses/agpl-3.0.html)** -- free for open-source use
 - **Commercial license** -- available for organizations that need an alternative to AGPL-3.0 terms (details to follow)
 
-Copyright (c) 2025-2026 GovCraft
+Copyright (c) 2025-2026 Govcraft
