@@ -1,4 +1,5 @@
 jmap_url = "https://mail.govcraft.ai"
+page_size = 50
 
 [service]
 name = "missive"
