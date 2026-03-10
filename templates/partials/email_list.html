@@ -1,6 +1,6 @@
 {% if emails.is_empty() %}
 {% if next_position.is_none() %}
-<div class="flex items-center justify-center h-full text-sm text-brand-400">
+<div class="flex items-center justify-center h-full text-sm text-on-surface-faint">
     {% match search %}
     {% when Some with (q) %}
     No results for &ldquo;{{ q }}&rdquo;
@@ -11,21 +11,21 @@
 {% endif %}
 {% else %}
 {% if let Some(total) = total_count %}
-<div class="px-4 py-2 text-xs text-brand-400">
+<div class="px-4 py-2 text-xs text-on-surface-faint">
     {{ total }} {% if *total == 1 %}email{% else %}emails{% endif %}
 </div>
 {% endif %}
-<div class="flex items-center gap-2 px-4 py-1 border-b border-brand-100">
+<div class="flex items-center gap-2 px-4 py-1 border-b border-border">
     <input type="checkbox" id="select-all-checkbox"
-           class="h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
+           class="h-4 w-4 rounded border-border-strong text-primary focus:ring-ring cursor-pointer"
            onchange="document.querySelectorAll('.bulk-checkbox').forEach(function(cb) { cb.checked = this.checked; }.bind(this)); document.body.dispatchEvent(new Event('bulkSelectionChanged'));" />
-    <label for="select-all-checkbox" class="text-xs text-brand-500 cursor-pointer">Select all</label>
+    <label for="select-all-checkbox" class="text-xs text-on-surface-muted cursor-pointer">Select all</label>
 </div>
-<ul role="list" class="divide-y divide-brand-200">
+<ul role="list" class="divide-y divide-border">
 {% for email in emails %}
-    <li id="email-row-{{ email.id }}" class="flex items-start min-w-0 overflow-hidden{% if email.is_unread %} bg-brand-50/50{% else %} bg-white{% endif %}">
+    <li id="email-row-{{ email.id }}" class="flex items-start min-w-0 overflow-hidden{% if email.is_unread %} bg-surface-hover/50{% else %} bg-surface{% endif %}">
         <div class="flex items-center shrink-0 pl-2 pt-3 sm:pl-4 sm:pt-4">
-            <input type="checkbox" class="bulk-checkbox h-4 w-4 rounded border-brand-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
+            <input type="checkbox" class="bulk-checkbox h-4 w-4 rounded border-border-strong text-primary focus:ring-ring cursor-pointer"
                    value="{{ email.id }}"
                    onchange="document.body.dispatchEvent(new Event('bulkSelectionChanged'));" />
         </div>
@@ -33,30 +33,30 @@
            hx-get="/api/v1/emails/{{ email.id }}"
            hx-target="#email-detail-pane"
            hx-swap="innerHTML"
-           class="email-row flex-1 min-w-0 block px-4 py-4 hover:bg-brand-50 cursor-pointer transition-colors"
-           onclick="document.querySelectorAll('.email-row').forEach(el => el.classList.remove('bg-brand-100')); this.classList.add('bg-brand-100');">
+           class="email-row flex-1 min-w-0 block px-4 py-4 hover:bg-surface-hover cursor-pointer transition-colors"
+           onclick="document.querySelectorAll('.email-row').forEach(el => el.classList.remove('bg-surface-raised')); this.classList.add('bg-surface-raised');">
             <div class="flex items-baseline justify-between mb-1 min-w-0">
-                <span class="text-sm truncate min-w-0{% if email.is_unread %} font-semibold text-brand-900{% else %} text-brand-600{% endif %}">
+                <span class="text-sm truncate min-w-0{% if email.is_unread %} font-semibold text-on-surface{% else %} text-on-surface-muted{% endif %}">
                     {{ email.from }}
                 </span>
                 <span class="hidden shrink-0 items-center gap-1 ml-2 whitespace-nowrap sm:flex">
                     {% if email.is_flagged %}
-                    <svg class="w-3.5 h-3.5 text-accent-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg class="w-3.5 h-3.5 text-accent" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" />
                     </svg>
                     {% endif %}
                     {% if email.has_attachment %}
-                    <svg class="w-3.5 h-3.5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg class="w-3.5 h-3.5 text-on-surface-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                     </svg>
                     {% endif %}
-                    <span class="text-xs text-brand-400">{{ email.received_at }}</span>
+                    <span class="text-xs text-on-surface-faint">{{ email.received_at }}</span>
                 </span>
             </div>
-            <div class="text-sm truncate{% if email.is_unread %} font-medium text-brand-800{% else %} text-brand-600{% endif %}">
+            <div class="text-sm truncate{% if email.is_unread %} font-medium text-on-surface{% else %} text-on-surface-muted{% endif %}">
                 {{ email.subject }}
             </div>
-            <div class="text-xs text-brand-400 line-clamp-2 mt-0.5">
+            <div class="text-xs text-on-surface-faint line-clamp-2 mt-0.5">
                 {{ email.preview }}
             </div>
         </a>
@@ -68,7 +68,7 @@
 <div hx-get="/api/v1/emails?mailbox_id={{ mailbox_id }}&amp;position={{ pos }}{% if let Some(q) = search %}&amp;search={{ q }}{% endif %}"
      hx-trigger="intersect once root:#email-list-pane threshold:0.1"
      hx-swap="outerHTML"
-     class="flex items-center justify-center py-4 text-sm text-brand-400">
+     class="flex items-center justify-center py-4 text-sm text-on-surface-faint">
     Loading more...
 </div>
 {% when None %}

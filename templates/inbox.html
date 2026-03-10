@@ -12,24 +12,24 @@
 
     <main class="missive-grid" data-active-pane="mailboxes" hx-ext="sse" sse-connect="/api/v1/events">
         <!-- Mailbox sidebar -->
-        <div id="mailbox-pane" class="border-r border-brand-200 bg-brand-50 overflow-hidden overflow-y-auto shadow-sm sm:rounded-md"
+        <div id="mailbox-pane" class="border-r border-border bg-surface-dim overflow-hidden overflow-y-auto shadow-sm sm:rounded-md"
              hx-get="/api/v1/mailboxes"
              hx-trigger="load, mailboxesUpdated from:body, sse:mailboxesUpdated"
              hx-swap="innerHTML">
-            <div class="p-4 text-sm text-brand-400">Loading mailboxes...</div>
+            <div class="p-4 text-sm text-on-surface-faint">Loading mailboxes...</div>
         </div>
 
         <!-- Email list pane -->
-        <div id="email-list-pane" class="border-r border-brand-200 overflow-hidden overflow-y-auto bg-white shadow-sm sm:rounded-md min-w-0">
+        <div id="email-list-pane" class="border-r border-border overflow-hidden overflow-y-auto bg-surface shadow-sm sm:rounded-md min-w-0">
             <button type="button"
-                    class="md:hidden flex items-center gap-1 px-4 py-2 text-sm text-brand-600"
+                    class="md:hidden flex items-center gap-1 px-4 py-2 text-sm text-on-surface-muted"
                     onclick="document.querySelector('.missive-grid').dataset.activePane = 'mailboxes'">
                 <svg class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
                 </svg>
                 Mailboxes
             </button>
-            <div class="flex items-center justify-center h-full text-sm text-brand-400">
+            <div class="flex items-center justify-center h-full text-sm text-on-surface-faint">
                 Select a mailbox
             </div>
         </div>
@@ -42,7 +42,7 @@
         </div>
 
         <!-- Email detail pane -->
-        <div id="email-detail-pane" class="bg-white overflow-y-auto">
+        <div id="email-detail-pane" class="bg-surface overflow-y-auto">
             {% include "partials/empty_state.html" %}
         </div>
     </main>

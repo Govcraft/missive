@@ -1,57 +1,148 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 @source "../../templates";
 
 @theme {
     --font-sans: "Inter", sans-serif;
-    --color-brand-950: oklch(0.2640 0.0579 251.70);
-    --color-brand-900: oklch(0.2939 0.0677 253.65);
-    --color-brand-800: oklch(0.3419 0.0757 251.02);
-    --color-brand-700: oklch(0.3971 0.0854 246.97);
-    --color-brand-600: oklch(0.4536 0.0993 246.77);
-    --color-brand-500: oklch(0.5232 0.1069 244.91);
-    --color-brand-400: oklch(0.6262 0.0982 241.66);
-    --color-brand-300: oklch(0.7428 0.0781 239.13);
-    --color-brand-200: oklch(0.8537 0.0460 238.17);
-    --color-brand-100: oklch(0.9275 0.0205 243.51);
-    --color-brand-50: oklch(0.9641 0.0094 243.02);
-    --color-accent-800: oklch(0.4987 0.0928 57.41);
-    --color-accent-700: oklch(0.5687 0.1078 57.23);
-    --color-accent-600: oklch(0.6547 0.1255 57.62);
-    --color-accent-500: oklch(0.7142 0.1153 65.29);
-    --color-accent-50: oklch(0.9766 0.0119 67.58);
+
+    /* ── Raw color scales ── */
+
+    /* Neutral (blue-tinted slate) — 60% surfaces, text, borders */
+    --color-neutral-950: oklch(0.2640 0.0579 251.70);
+    --color-neutral-900: oklch(0.2939 0.0677 253.65);
+    --color-neutral-800: oklch(0.3419 0.0757 251.02);
+    --color-neutral-700: oklch(0.3971 0.0854 246.97);
+    --color-neutral-600: oklch(0.4536 0.0993 246.77);
+    --color-neutral-500: oklch(0.5232 0.1069 244.91);
+    --color-neutral-400: oklch(0.6262 0.0982 241.66);
+    --color-neutral-300: oklch(0.7428 0.0781 239.13);
+    --color-neutral-200: oklch(0.8537 0.0460 238.17);
+    --color-neutral-100: oklch(0.9275 0.0205 243.51);
+    --color-neutral-50: oklch(0.9641 0.0094 243.02);
+
+    /* Navy (deep blue) — 30% interactive emphasis */
+    --color-navy-950: oklch(0.22 0.07 258);
+    --color-navy-900: oklch(0.26 0.10 258);
+    --color-navy-800: oklch(0.32 0.12 256);
+    --color-navy-700: oklch(0.38 0.14 255);
+    --color-navy-600: oklch(0.45 0.16 254);
+    --color-navy-500: oklch(0.53 0.15 253);
+    --color-navy-400: oklch(0.63 0.13 251);
+    --color-navy-300: oklch(0.73 0.10 249);
+    --color-navy-200: oklch(0.83 0.06 247);
+    --color-navy-100: oklch(0.92 0.03 248);
+    --color-navy-50: oklch(0.96 0.015 250);
+
+    /* Copper (warm reddish-gold) — 10% CTAs, highlights */
+    --color-copper-950: oklch(0.25 0.05 42);
+    --color-copper-900: oklch(0.30 0.07 42);
+    --color-copper-800: oklch(0.38 0.10 43);
+    --color-copper-700: oklch(0.46 0.12 44);
+    --color-copper-600: oklch(0.55 0.14 45);
+    --color-copper-500: oklch(0.63 0.13 46);
+    --color-copper-400: oklch(0.72 0.11 48);
+    --color-copper-300: oklch(0.80 0.08 50);
+    --color-copper-200: oklch(0.87 0.05 52);
+    --color-copper-100: oklch(0.93 0.03 55);
+    --color-copper-50: oklch(0.97 0.01 58);
+
+    /* ── Semantic surface tokens (light defaults) ── */
+    --color-surface: oklch(1 0 0);
+    --color-surface-nav: var(--color-neutral-200);
+    --color-surface-dim: var(--color-neutral-50);
+    --color-surface-raised: var(--color-neutral-100);
+    --color-surface-hover: var(--color-neutral-50);
+    --color-surface-invert: var(--color-neutral-950);
+
+    /* ── Semantic text tokens ── */
+    --color-on-surface: var(--color-neutral-900);
+    --color-on-surface-secondary: var(--color-neutral-700);
+    --color-on-surface-muted: var(--color-neutral-500);
+    --color-on-surface-faint: var(--color-neutral-400);
+    --color-on-surface-invert: oklch(1 0 0);
+
+    /* ── Semantic border/ring tokens ── */
+    --color-border: var(--color-neutral-200);
+    --color-border-strong: var(--color-neutral-300);
+    --color-ring: var(--color-neutral-500);
+
+    /* ── Primary (navy) semantic tokens ── */
+    --color-primary: var(--color-navy-600);
+    --color-primary-hover: var(--color-navy-500);
+    --color-primary-surface: var(--color-navy-50);
+
+    /* ── Accent (copper) semantic tokens ── */
+    --color-accent: var(--color-copper-600);
+    --color-accent-hover: var(--color-copper-500);
+    --color-accent-surface: var(--color-copper-50);
+
+    /* ── Status colors ── */
+    --color-success: oklch(0.72 0.17 142);
+    --color-danger: oklch(0.63 0.21 25);
+}
+
+/* ── Dark mode overrides ── */
+.dark {
+    --color-surface: oklch(0.205 0.006 260);
+    --color-surface-nav: var(--color-navy-950);
+    --color-surface-dim: oklch(0.175 0.006 260);
+    --color-surface-raised: oklch(0.245 0.006 260);
+    --color-surface-hover: oklch(0.28 0.006 260);
+    --color-surface-invert: oklch(0.92 0.006 260);
+
+    --color-on-surface: oklch(0.93 0.006 260);
+    --color-on-surface-secondary: oklch(0.75 0.006 260);
+    --color-on-surface-muted: oklch(0.60 0.006 260);
+    --color-on-surface-faint: oklch(0.50 0.006 260);
+    --color-on-surface-invert: oklch(0.18 0.006 260);
+
+    --color-border: oklch(0.40 0.006 260);
+    --color-border-strong: oklch(0.48 0.006 260);
+    --color-ring: oklch(0.55 0.006 260);
+
+    --color-primary: var(--color-navy-400);
+    --color-primary-hover: var(--color-navy-300);
+    --color-primary-surface: var(--color-navy-950);
+
+    --color-accent: var(--color-copper-400);
+    --color-accent-hover: var(--color-copper-300);
+    --color-accent-surface: var(--color-copper-950);
+
+    --color-success: oklch(0.72 0.17 142);
+    --color-danger: oklch(0.70 0.18 25);
 }
 
 /* ── Custom scrollbars ── */
 * {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-brand-300) transparent;
+    scrollbar-color: var(--color-border) transparent;
 }
 
 *:hover {
-    scrollbar-color: var(--color-brand-400) transparent;
+    scrollbar-color: var(--color-border-strong) transparent;
 }
 
-/* ── Trix editor — brand-integrated ── */
+/* ── Trix editor ── */
 trix-editor {
     min-height: 12rem;
-    border: 1px solid var(--color-brand-300) !important;
+    border: 1px solid var(--color-border-strong) !important;
     border-radius: 0.375rem !important;
     padding: 0.75rem 1rem !important;
     font-size: 0.875rem;
     line-height: 1.625;
-    color: var(--color-brand-900);
-    background: white;
+    color: var(--color-on-surface);
+    background: var(--color-surface);
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 trix-editor:focus {
-    border-color: var(--color-brand-500) !important;
-    box-shadow: 0 0 0 1px var(--color-brand-500);
+    border-color: var(--color-ring) !important;
+    box-shadow: 0 0 0 1px var(--color-ring);
     outline: none;
 }
 
 trix-toolbar .trix-button-group {
-    border-color: var(--color-brand-300) !important;
+    border-color: var(--color-border-strong) !important;
     border-radius: 0.375rem !important;
     overflow: hidden;
 }
@@ -62,20 +153,25 @@ trix-toolbar .trix-button {
 }
 
 trix-toolbar .trix-button:not(:first-child) {
-    border-left: 1px solid var(--color-brand-200) !important;
+    border-left: 1px solid var(--color-border) !important;
 }
 
 trix-toolbar .trix-button.trix-active {
-    background: var(--color-brand-100) !important;
-    color: var(--color-brand-700);
+    background: var(--color-surface-raised) !important;
+    color: var(--color-on-surface-secondary);
 }
 
 trix-toolbar .trix-button:hover {
-    background: var(--color-brand-50) !important;
+    background: var(--color-surface-hover) !important;
 }
 
 trix-toolbar .trix-button-group--file-tools {
     display: none;
+}
+
+/* Trix button icons: invert for dark mode visibility */
+.dark trix-toolbar .trix-button::before {
+    filter: invert(1);
 }
 
 /* ── Toast entrance animation ── */
@@ -138,8 +234,8 @@ trix-toolbar .trix-button-group--file-tools {
     transition: background-color 0.15s ease;
 }
 
-.email-row.bg-brand-100 {
-    box-shadow: inset 3px 0 0 var(--color-brand-500);
+.email-row.bg-surface-raised {
+    box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
 /* ── Mailbox sidebar active indicator ── */
@@ -147,8 +243,8 @@ trix-toolbar .trix-button-group--file-tools {
     transition: background-color 0.1s ease, color 0.1s ease;
 }
 
-.mailbox-item.bg-brand-100 {
-    box-shadow: inset 3px 0 0 var(--color-brand-500);
+.mailbox-item.bg-surface-raised {
+    box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
 /* ── Empty state breathing room ── */

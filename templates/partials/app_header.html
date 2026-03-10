@@ -1,5 +1,5 @@
-<div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-brand-200 bg-white px-4 shadow-xs sm:gap-x-6 sm:px-6 lg:px-8">
-    <button type="button" command="show-modal" commandfor="sidebar" class="-m-2.5 p-2.5 text-brand-700 lg:hidden">
+<div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-border bg-surface px-4 shadow-xs sm:gap-x-6 sm:px-6 lg:px-8">
+    <button type="button" command="show-modal" commandfor="sidebar" class="-m-2.5 p-2.5 text-on-surface-secondary lg:hidden">
         <span class="sr-only">Open sidebar</span>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-6">
             <path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" stroke-linecap="round" stroke-linejoin="round" />
@@ -7,7 +7,7 @@
     </button>
 
     <!-- Separator -->
-    <div aria-hidden="true" class="h-6 w-px bg-brand-900/10 lg:hidden"></div>
+    <div aria-hidden="true" class="h-6 w-px bg-on-surface/10 lg:hidden"></div>
 
     <div class="flex flex-1 justify-between">
         <div class="flex shrink-0 items-center gap-x-4">
@@ -16,7 +16,7 @@
                 hx-get="/api/v1/compose"
                 hx-target="#email-detail-pane"
                 hx-swap="innerHTML"
-                class="rounded-md bg-accent-600 px-3 py-1.5 text-sm font-semibold text-white shadow-xs hover:bg-accent-500 transition-colors">
+                class="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-on-surface-invert shadow-xs hover:bg-accent-hover transition-colors">
                 Compose
             </button>
         </div>
@@ -28,9 +28,9 @@
                        hx-target="#email-list-pane"
                        hx-swap="innerHTML"
                        hx-include="#active-mailbox-id"
-                       class="col-start-1 row-start-1 block w-full rounded-md bg-white py-1.5 pr-3 pl-10 text-base text-brand-900 outline-1 -outline-offset-1 outline-brand-300 placeholder:text-brand-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-500 sm:text-sm/6" />
+                       class="col-start-1 row-start-1 block w-full rounded-md bg-surface py-1.5 pr-3 pl-10 text-base text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6" />
                 <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
-                     class="pointer-events-none col-start-1 row-start-1 ml-3 size-5 self-center text-brand-400">
+                     class="pointer-events-none col-start-1 row-start-1 ml-3 size-5 self-center text-on-surface-faint">
                     <path d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd" fill-rule="evenodd" />
                 </svg>
             </div>
@@ -41,23 +41,27 @@
                 <button class="relative flex items-center -m-1.5 p-1.5">
                     <span class="absolute -inset-1.5"></span>
                     <span class="sr-only">Open user menu</span>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-8 rounded-full bg-brand-100 p-1 text-brand-400">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-8 rounded-full bg-surface-raised p-1 text-on-surface-faint">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                         </svg>
                     <span class="hidden lg:flex lg:items-center">
-                        <span aria-hidden="true" class="ml-4 text-sm/6 font-semibold text-brand-900">{{ username }}</span>
-                        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="ml-2 size-5 text-brand-400">
+                        <span aria-hidden="true" class="ml-4 text-sm/6 font-semibold text-on-surface">{{ username }}</span>
+                        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="ml-2 size-5 text-on-surface-faint">
                             <path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" />
                         </svg>
                     </span>
                 </button>
-                <el-menu anchor="bottom end" popover class="w-44 origin-top-right rounded-md bg-white py-2 shadow-lg outline outline-brand-900/5 transition transition-discrete [--anchor-gap:--spacing(2.5)] data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in">
+                <el-menu anchor="bottom end" popover class="w-44 origin-top-right rounded-md bg-surface py-2 shadow-lg outline outline-on-surface/5 transition transition-discrete [--anchor-gap:--spacing(2.5)] data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in">
                     <button type="button" command="show-modal" commandfor="shortcuts-dialog"
-                            class="block w-full px-3 py-1 text-left text-sm/6 text-brand-900 hover:bg-brand-50">
+                            class="block w-full px-3 py-1 text-left text-sm/6 text-on-surface hover:bg-surface-hover">
                         Keyboard shortcuts
                     </button>
+                    <button type="button" onclick="toggleTheme()"
+                            class="block w-full px-3 py-1 text-left text-sm/6 text-on-surface hover:bg-surface-hover">
+                        <span id="theme-label">Theme: System</span>
+                    </button>
                     <form action="/logout" method="POST">
-                        <button type="submit" class="block w-full px-3 py-1 text-left text-sm/6 text-brand-900 hover:bg-brand-50">Sign out</button>
+                        <button type="submit" class="block w-full px-3 py-1 text-left text-sm/6 text-on-surface hover:bg-surface-hover">Sign out</button>
                     </form>
                 </el-menu>
             </el-dropdown>

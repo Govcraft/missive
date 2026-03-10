@@ -3,11 +3,11 @@
 {% block title %}Login - Missive{% endblock %}
 
 {% block content %}
-<div class="flex min-h-full items-center justify-center px-4 py-12 sm:px-6 lg:px-8 bg-gradient-to-br from-brand-50 to-white">
+<div class="flex min-h-full items-center justify-center px-4 py-12 sm:px-6 lg:px-8 bg-gradient-to-br from-surface-dim to-surface">
     <div class="w-full max-w-sm space-y-10">
         <div>
             <img src="/static/images/missive_logomark_light_bg.png" alt="Missive" class="mx-auto h-48 w-auto" />
-            <h2 class="mt-10 text-center text-2xl/9 font-bold tracking-tight text-brand-900">Sign in to your account</h2>
+            <h2 class="mt-10 text-center text-2xl/9 font-bold tracking-tight text-on-surface">Sign in to your account</h2>
         </div>
 
         {% if let Some(err) = error %}
@@ -20,17 +20,17 @@
             <div>
                 <div>
                     <input id="username" type="text" name="username" required placeholder="Username" autocomplete="username" aria-label="Username"
-                        class="block w-full rounded-t-md bg-white px-3 py-1.5 text-base text-brand-900 outline-1 -outline-offset-1 outline-brand-300 placeholder:text-brand-400 focus:relative focus:outline-2 focus:-outline-offset-2 focus:outline-brand-500 sm:text-sm/6" />
+                        class="block w-full rounded-t-md bg-surface px-3 py-1.5 text-base text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:relative focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6" />
                 </div>
                 <div class="-mt-px">
                     <input id="password" type="password" name="password" required placeholder="Password" autocomplete="current-password" aria-label="Password"
-                        class="block w-full rounded-b-md bg-white px-3 py-1.5 text-base text-brand-900 outline-1 -outline-offset-1 outline-brand-300 placeholder:text-brand-400 focus:relative focus:outline-2 focus:-outline-offset-2 focus:outline-brand-500 sm:text-sm/6" />
+                        class="block w-full rounded-b-md bg-surface px-3 py-1.5 text-base text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:relative focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6" />
                 </div>
             </div>
 
             <div>
                 <button type="submit"
-                    class="flex w-full justify-center rounded-md bg-brand-700 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-xs hover:bg-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700 transition-colors">
+                    class="flex w-full justify-center rounded-md bg-primary px-3 py-1.5 text-sm/6 font-semibold text-on-surface-invert shadow-xs hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-colors">
                     Sign in
                 </button>
             </div>

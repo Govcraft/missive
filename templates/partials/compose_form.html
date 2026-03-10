@@ -1,6 +1,6 @@
-<div class="overflow-hidden bg-white">
+<div class="overflow-hidden bg-surface">
     <button type="button"
-            class="md:hidden flex items-center gap-1 px-4 pt-3 text-sm text-brand-600"
+            class="md:hidden flex items-center gap-1 px-4 pt-3 text-sm text-on-surface-muted"
             onclick="var grid = document.querySelector('.missive-grid'); if (grid) grid.dataset.activePane = 'emails';">
         <svg class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -8,55 +8,55 @@
         Back to list
     </button>
     <div class="px-4 py-5 sm:px-6">
-        <h2 class="text-lg/7 font-semibold text-brand-900">{{ title }}</h2>
+        <h2 class="text-lg/7 font-semibold text-on-surface">{{ title }}</h2>
     </div>
-    <div class="border-t border-brand-200 px-4 py-5 sm:px-6">
+    <div class="border-t border-border px-4 py-5 sm:px-6">
         <form id="compose-form" hx-target="#email-detail-pane" hx-swap="innerHTML" class="space-y-3">
             {% if let Some(identity) = identities.first() %}
             <input type="hidden" name="identity_id" value="{{ identity.id }}" />
             <input type="hidden" name="in_reply_to" value="{{ form.in_reply_to }}" />
             <input type="hidden" name="references_header" value="{{ form.references_header }}" />
             <div class="flex items-center gap-3">
-                <label class="w-16 shrink-0 text-right text-sm/6 font-medium text-brand-900">From</label>
-                <div class="min-w-0 flex-1 rounded-md bg-brand-50 px-3 py-1.5 text-base text-brand-900 sm:text-sm/6">
+                <label class="w-16 shrink-0 text-right text-sm/6 font-medium text-on-surface">From</label>
+                <div class="min-w-0 flex-1 rounded-md bg-surface-dim px-3 py-1.5 text-base text-on-surface sm:text-sm/6">
                     {{ identity.name }} &lt;{{ identity.email }}&gt;
                 </div>
             </div>
             {% endif %}
 
             <div class="flex items-center gap-3">
-                <label for="to" class="w-16 shrink-0 text-right text-sm/6 font-medium text-brand-900">To</label>
+                <label for="to" class="w-16 shrink-0 text-right text-sm/6 font-medium text-on-surface">To</label>
                 <input id="to" type="text" name="to" value="{{ form.to }}" required
-                    class="min-w-0 flex-1 rounded-md bg-white px-3 py-1.5 text-base text-brand-900 outline-1 -outline-offset-1 outline-brand-300 placeholder:text-brand-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-500 sm:text-sm/6"
+                    class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-base text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6"
                     placeholder="recipient@example.com" />
             </div>
 
             <div class="flex items-center gap-3">
-                <label for="cc" class="w-16 shrink-0 text-right text-sm/6 font-medium text-brand-900">Cc</label>
+                <label for="cc" class="w-16 shrink-0 text-right text-sm/6 font-medium text-on-surface">Cc</label>
                 <input id="cc" type="text" name="cc" value="{{ form.cc }}"
-                    class="min-w-0 flex-1 rounded-md bg-white px-3 py-1.5 text-base text-brand-900 outline-1 -outline-offset-1 outline-brand-300 placeholder:text-brand-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-500 sm:text-sm/6"
+                    class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-base text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6"
                     placeholder="cc@example.com" />
             </div>
 
             <div class="flex items-center gap-3">
-                <label for="bcc" class="w-16 shrink-0 text-right text-sm/6 font-medium text-brand-900">Bcc</label>
+                <label for="bcc" class="w-16 shrink-0 text-right text-sm/6 font-medium text-on-surface">Bcc</label>
                 <input id="bcc" type="text" name="bcc" value="{{ form.bcc }}"
-                    class="min-w-0 flex-1 rounded-md bg-white px-3 py-1.5 text-base text-brand-900 outline-1 -outline-offset-1 outline-brand-300 placeholder:text-brand-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-500 sm:text-sm/6"
+                    class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-base text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6"
                     placeholder="bcc@example.com" />
             </div>
 
             <div class="flex items-center gap-3">
-                <label for="subject" class="w-16 shrink-0 text-right text-sm/6 font-medium text-brand-900">Subject</label>
+                <label for="subject" class="w-16 shrink-0 text-right text-sm/6 font-medium text-on-surface">Subject</label>
                 <input id="subject" type="text" name="subject" value="{{ form.subject }}"
-                    class="min-w-0 flex-1 rounded-md bg-white px-3 py-1.5 text-base text-brand-900 outline-1 -outline-offset-1 outline-brand-300 placeholder:text-brand-400 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-500 sm:text-sm/6" />
+                    class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-base text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6" />
             </div>
 
             <div class="flex items-start gap-3">
-                <label class="w-16 shrink-0 pt-1.5 text-right text-sm/6 font-medium text-brand-900">Message</label>
+                <label class="w-16 shrink-0 pt-1.5 text-right text-sm/6 font-medium text-on-surface">Message</label>
                 <div class="min-w-0 flex-1">
                     <input id="body_html" type="hidden" name="body_html" value="{{ form.body_html }}">
                     <trix-editor input="body_html"
-                        class="trix-content block w-full rounded-md bg-white px-3 py-1.5 text-base text-brand-900 outline-1 -outline-offset-1 outline-brand-300 focus:outline-2 focus:-outline-offset-2 focus:outline-brand-500 sm:text-sm/6">
+                        class="trix-content block w-full rounded-md bg-surface px-3 py-1.5 text-base text-on-surface outline-1 -outline-offset-1 outline-border-strong focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6">
                     </trix-editor>
                 </div>
             </div>
@@ -70,7 +70,7 @@
                         hx-get="/api/v1/compose/cancel"
                         hx-target="#email-detail-pane"
                         hx-swap="innerHTML"
-                        class="relative inline-flex items-center rounded-l-md bg-white px-3 py-2 text-sm font-semibold text-brand-900 inset-ring-1 inset-ring-brand-300 hover:bg-brand-50 focus:z-10 transition-colors">
+                        class="relative inline-flex items-center rounded-l-md bg-surface px-3 py-2 text-sm font-semibold text-on-surface inset-ring-1 inset-ring-border-strong hover:bg-surface-hover focus:z-10 transition-colors">
                         Cancel
                     </button>
                     <button type="button"
@@ -78,12 +78,12 @@
                         hx-target="#email-detail-pane"
                         hx-swap="innerHTML"
                         hx-include="#compose-form"
-                        class="relative -ml-px inline-flex items-center bg-white px-3 py-2 text-sm font-semibold text-brand-900 inset-ring-1 inset-ring-brand-300 hover:bg-brand-50 focus:z-10 transition-colors">
+                        class="relative -ml-px inline-flex items-center bg-surface px-3 py-2 text-sm font-semibold text-on-surface inset-ring-1 inset-ring-border-strong hover:bg-surface-hover focus:z-10 transition-colors">
                         Save Draft
                     </button>
                     <button type="submit"
                         hx-post="/api/v1/send"
-                        class="relative -ml-px inline-flex items-center rounded-r-md bg-accent-600 px-3 py-2 text-sm font-semibold text-white inset-ring-1 inset-ring-accent-600 hover:bg-accent-500 focus:z-10 transition-colors">
+                        class="relative -ml-px inline-flex items-center rounded-r-md bg-accent px-3 py-2 text-sm font-semibold text-on-surface-invert inset-ring-1 inset-ring-accent hover:bg-accent-hover focus:z-10 transition-colors">
                         Send
                     </button>
                 </span>

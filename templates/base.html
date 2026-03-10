@@ -1,8 +1,43 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-white">
+<html lang="en" class="h-full bg-surface">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+    document.documentElement.classList.toggle("dark",
+      localStorage.theme === "dark" ||
+      (!("theme" in localStorage) &&
+       window.matchMedia("(prefers-color-scheme: dark)").matches));
+
+    function toggleTheme() {
+        if (!('theme' in localStorage)) {
+            localStorage.theme = 'light';
+        } else if (localStorage.theme === 'light') {
+            localStorage.theme = 'dark';
+        } else {
+            localStorage.removeItem('theme');
+        }
+        document.documentElement.classList.toggle('dark',
+            localStorage.theme === 'dark' ||
+            (!('theme' in localStorage) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches));
+        updateThemeLabel();
+    }
+
+    function updateThemeLabel() {
+        var label = document.getElementById('theme-label');
+        if (!label) return;
+        if (!('theme' in localStorage)) {
+            label.textContent = 'Theme: System';
+        } else if (localStorage.theme === 'light') {
+            label.textContent = 'Theme: Light';
+        } else {
+            label.textContent = 'Theme: Dark';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', updateThemeLabel);
+    </script>
     <title>{% block title %}Missive{% endblock %}</title>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script src="https://unpkg.com/htmx-ext-sse@2.2.2/sse.js"></script>
@@ -14,7 +49,7 @@
     <link rel="stylesheet" href="/static/css/trix.css">
     <script src="/static/js/trix.js"></script>
 </head>
-<body class="h-full text-brand-900">
+<body class="h-full text-on-surface">
     {% block content %}{% endblock %}
 <div id="toast-container" aria-live="assertive"
      class="pointer-events-none fixed inset-0 z-50 flex items-end px-4 py-6 sm:items-start sm:p-6"
@@ -31,17 +66,17 @@ function resizeEmailIframe(iframe) {
     }
 }
 document.body.addEventListener('emailRead', function() {
-    var row = document.querySelector('.email-row.bg-brand-100');
+    var row = document.querySelector('.email-row.bg-surface-raised');
     if (row) {
-        row.classList.remove('bg-white');
-        row.classList.add('bg-brand-50/50');
+        row.classList.remove('bg-surface');
+        row.classList.add('bg-surface-hover/50');
         row.querySelectorAll('.font-semibold').forEach(function(el) {
-            el.classList.remove('font-semibold', 'text-brand-900');
-            el.classList.add('text-brand-600');
+            el.classList.remove('font-semibold', 'text-on-surface');
+            el.classList.add('text-on-surface-muted');
         });
         row.querySelectorAll('.font-medium').forEach(function(el) {
-            el.classList.remove('font-medium', 'text-brand-800');
-            el.classList.add('text-brand-600');
+            el.classList.remove('font-medium', 'text-on-surface');
+            el.classList.add('text-on-surface-muted');
         });
     }
 });
@@ -121,7 +156,7 @@ document.addEventListener('keydown', function(e) {
 
     // x — toggle checkbox on current/highlighted email row
     if (key === 'x') {
-        var current = document.querySelector('.email-row.bg-brand-100');
+        var current = document.querySelector('.email-row.bg-surface-raised');
         if (current) {
             var checkbox = current.closest('li').querySelector('.bulk-checkbox');
             if (checkbox) {
@@ -134,7 +169,7 @@ document.addEventListener('keydown', function(e) {
 
     // j/k — navigate email list
     if (key === 'j' || key === 'k') {
-        var current = document.querySelector('.email-row.bg-brand-100');
+        var current = document.querySelector('.email-row.bg-surface-raised');
         var target;
         if (current) {
             target = key === 'j' ? current.nextElementSibling : current.previousElementSibling;
