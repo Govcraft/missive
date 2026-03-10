@@ -141,9 +141,9 @@ The included `docker-compose.yml` sets up Missive behind Traefik with automatic 
 ```bash
 # Create a .env file
 cat > .env << 'EOF'
-DOMAIN=mail.example.com
-ACME_EMAIL=admin@example.com
-ACTON_JMAP_URL=https://your-mail-server.example.com
+DOMAIN=mail.example.com                              # Public domain Traefik will route to Missive
+ACME_EMAIL=admin@example.com                         # Email for Let's Encrypt certificate notifications
+ACTON_JMAP_URL=https://your-mail-server.example.com  # Your JMAP mail server URL
 EOF
 
 # Start the stack
