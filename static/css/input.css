@@ -97,9 +97,40 @@ trix-toolbar .trix-button-group--file-tools {
 /* ── Grid layout ── */
 .missive-grid {
     display: grid;
-    grid-template-columns: 250px 350px 1fr;
+    grid-template-columns: 1fr;
     flex: 1;
     min-height: 0;
+}
+
+@media (min-width: 768px) {
+    .missive-grid {
+        grid-template-columns: 250px 1fr;
+    }
+}
+
+@media (min-width: 1280px) {
+    .missive-grid {
+        grid-template-columns: 250px 350px 1fr;
+    }
+}
+
+/* ── Mobile pane switching ── */
+@media (max-width: 767px) {
+    .missive-grid[data-active-pane="mailboxes"] > #mailbox-pane { display: block; }
+    .missive-grid[data-active-pane="mailboxes"] > #email-list-pane { display: none; }
+    .missive-grid[data-active-pane="mailboxes"] > #email-detail-pane { display: none; }
+
+    .missive-grid[data-active-pane="emails"] > #mailbox-pane { display: none; }
+    .missive-grid[data-active-pane="emails"] > #email-list-pane { display: block; }
+    .missive-grid[data-active-pane="emails"] > #email-detail-pane { display: none; }
+
+    .missive-grid[data-active-pane="detail"] > #mailbox-pane { display: none; }
+    .missive-grid[data-active-pane="detail"] > #email-list-pane { display: none; }
+    .missive-grid[data-active-pane="detail"] > #email-detail-pane { display: block; }
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+    .missive-grid > #email-detail-pane:empty { display: none; }
 }
 
 /* ── Email row selection refinements ── */

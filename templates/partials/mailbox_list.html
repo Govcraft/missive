@@ -6,7 +6,7 @@
            hx-target="#email-list-pane"
            hx-swap="innerHTML"
            class="mailbox-item flex items-center justify-between px-4 py-1.5 text-sm hover:bg-brand-200 cursor-pointer transition-colors sm:px-6{% if mailbox.role == "inbox" %} bg-brand-100 text-brand-700{% endif %}"
-           {% if mailbox.role == "inbox" %}hx-trigger="load, click" {% endif %}onclick="document.querySelectorAll('.mailbox-item').forEach(el => el.classList.remove('bg-brand-100', 'text-brand-700')); this.classList.add('bg-brand-100', 'text-brand-700'); document.getElementById('active-mailbox-id').value = '{{ mailbox.id }}'; document.getElementById('search-input').value = '';">
+           {% if mailbox.role == "inbox" %}hx-trigger="load, click" {% endif %}onclick="document.querySelectorAll('.mailbox-item').forEach(el => el.classList.remove('bg-brand-100', 'text-brand-700')); this.classList.add('bg-brand-100', 'text-brand-700'); document.getElementById('active-mailbox-id').value = '{{ mailbox.id }}'; document.getElementById('search-input').value = ''; var grid = document.querySelector('.missive-grid'); if (grid) grid.dataset.activePane = 'emails';">
             <span class="truncate{% if mailbox.role == "inbox" %} font-semibold{% endif %}">
                 {{ mailbox.name }}
             </span>

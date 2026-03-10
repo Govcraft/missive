@@ -17,7 +17,7 @@
 <body class="h-full text-brand-900">
     {% block content %}{% endblock %}
 <div id="toast-container" aria-live="assertive"
-     class="fixed top-4 right-4 z-50 flex w-96 flex-col gap-3"
+     class="pointer-events-none fixed inset-0 z-50 flex items-end px-4 py-6 sm:items-start sm:p-6"
      hx-get="/api/v1/flash"
      hx-trigger="flashUpdated from:body"
      hx-swap="innerHTML">

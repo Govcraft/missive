@@ -10,7 +10,7 @@
 
     <input type="hidden" name="mailbox_id" id="active-mailbox-id" value="" />
 
-    <main class="missive-grid" hx-ext="sse" sse-connect="/api/v1/events">
+    <main class="missive-grid" data-active-pane="mailboxes" hx-ext="sse" sse-connect="/api/v1/events">
         <!-- Mailbox sidebar -->
         <div id="mailbox-pane" class="border-r border-brand-200 bg-brand-50 overflow-hidden overflow-y-auto shadow-sm sm:rounded-md"
              hx-get="/api/v1/mailboxes"
@@ -21,6 +21,14 @@
 
         <!-- Email list pane -->
         <div id="email-list-pane" class="border-r border-brand-200 overflow-hidden overflow-y-auto bg-white shadow-sm sm:rounded-md min-w-0">
+            <button type="button"
+                    class="md:hidden flex items-center gap-1 px-4 py-2 text-sm text-brand-600"
+                    onclick="document.querySelector('.missive-grid').dataset.activePane = 'mailboxes'">
+                <svg class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                </svg>
+                Mailboxes
+            </button>
             <div class="flex items-center justify-center h-full text-sm text-brand-400">
                 Select a mailbox
             </div>
@@ -42,5 +50,15 @@
     {% include "partials/bulk_actions_bar.html" %}
 </div>
 
+<script>
+document.body.addEventListener('htmx:afterSwap', function(event) {
+    if (event.detail.target.id === 'email-detail-pane' && window.innerWidth < 768) {
+        var grid = document.querySelector('.missive-grid');
+        if (grid && event.detail.target.children.length > 0) {
+            grid.dataset.activePane = 'detail';
+        }
+    }
+});
+</script>
 {% include "partials/shortcuts_modal.html" %}
 {% endblock %}
