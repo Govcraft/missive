@@ -15,9 +15,5 @@ pub async fn serve_embedded(Path(path): Path<String>) -> Response {
 
     let mime = file.metadata.mimetype();
 
-    (
-        [(header::CONTENT_TYPE, mime)],
-        Body::from(file.data),
-    )
-        .into_response()
+    ([(header::CONTENT_TYPE, mime)], Body::from(file.data)).into_response()
 }
