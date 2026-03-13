@@ -26,13 +26,18 @@ pub struct WebhookPayload {
     pub email_id: String,
     pub message_id: Vec<String>,
     pub thread_id: Option<String>,
+    pub mailbox_ids: Vec<String>,
     pub subject: Option<String>,
     pub from: Vec<AddressPayload>,
     pub to: Vec<AddressPayload>,
     pub cc: Vec<AddressPayload>,
+    pub reply_to: Vec<AddressPayload>,
+    pub in_reply_to: Vec<String>,
+    pub references: Vec<String>,
     pub preview: Option<String>,
     pub body_text: Option<String>,
     pub has_attachment: bool,
+    pub sent_at: Option<i64>,
     pub received_at: Option<i64>,
     pub keywords: Vec<String>,
     pub size: usize,
@@ -84,13 +89,28 @@ pub fn email_to_webhook_payload(
             .map(|s| s.to_string())
             .collect(),
         thread_id: email.thread_id().map(str::to_string),
+        mailbox_ids: email.mailbox_ids().into_iter().map(str::to_string).collect(),
         subject: email.subject().map(str::to_string),
         from: addresses_to_payload(email.from()),
         to: addresses_to_payload(email.to()),
         cc: addresses_to_payload(email.cc()),
+        reply_to: addresses_to_payload(email.reply_to()),
+        in_reply_to: email
+            .in_reply_to()
+            .unwrap_or_default()
+            .iter()
+            .map(|s| s.to_string())
+            .collect(),
+        references: email
+            .references()
+            .unwrap_or_default()
+            .iter()
+            .map(|s| s.to_string())
+            .collect(),
         preview: email.preview().map(str::to_string),
         body_text,
         has_attachment: email.has_attachment(),
+        sent_at: email.sent_at(),
         received_at: email.received_at(),
         keywords: email.keywords().into_iter().map(str::to_string).collect(),
         size: email.size(),
@@ -152,9 +172,13 @@ fn webhook_email_properties(include_body: bool) -> Vec<email::Property> {
         email::Property::From,
         email::Property::To,
         email::Property::Cc,
+        email::Property::ReplyTo,
+        email::Property::InReplyTo,
+        email::Property::References,
         email::Property::Subject,
         email::Property::Preview,
         email::Property::HasAttachment,
+        email::Property::SentAt,
     ];
     if include_body {
         props.push(email::Property::TextBody);
