@@ -4,3 +4,10 @@ page_size = 50
 [service]
 name = "missive"
 port = 8080
+
+[webhook]
+url = "http://govcraft:9090/webhook"
+secret = "0ZvfZv+smGjicDJZnxFVNAkL4pkq9AJ5aNOM+SRBkys="
+jmap_username = "roland@govcraft.ai"
+jmap_password = "Acquaint3-Earmark1-Trapezoid1-Survivor6-Attic3"
+include_body = true

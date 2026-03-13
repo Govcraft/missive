@@ -6,11 +6,17 @@ fn default_page_size() -> usize {
     50
 }
 
+fn default_ping_interval() -> u32 {
+    60
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MissiveConfig {
     pub jmap_url: JmapUrl,
     #[serde(default = "default_page_size")]
     pub page_size: usize,
+    #[serde(default)]
+    pub webhook: Option<WebhookConfig>,
 }
 
 impl Default for MissiveConfig {
@@ -18,8 +24,24 @@ impl Default for MissiveConfig {
         Self {
             jmap_url: JmapUrl::default(),
             page_size: default_page_size(),
+            webhook: None,
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WebhookConfig {
+    pub url: String,
+    #[serde(default)]
+    pub secret: Option<String>,
+    #[serde(default)]
+    pub jmap_username: String,
+    #[serde(default)]
+    pub jmap_password: String,
+    #[serde(default)]
+    pub include_body: bool,
+    #[serde(default = "default_ping_interval")]
+    pub ping_interval: u32,
 }
 
 #[cfg(test)]

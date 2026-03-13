@@ -20,6 +20,7 @@ mod jmap;
 mod routes;
 mod sanitize;
 mod session;
+mod webhook;
 
 use config::MissiveConfig;
 
@@ -117,15 +118,44 @@ pub async fn serve(
         }
     };
 
-    ServiceBuilder::<MissiveConfig>::new()
-        .with_config(config)
+    let service = ServiceBuilder::<MissiveConfig>::new()
+        .with_config(config.clone())
         .with_routes(routes)
-        .build()
-        .serve()
-        .await
-        .map_err(|e| CliError::ServeFailed {
-            message: e.to_string(),
-        })
+        .build();
+
+    // Submit webhook worker if configured (between build and serve)
+    if let Some(ref webhook_config) = config.custom.webhook {
+        info!("Webhook worker enabled, target: {}", webhook_config.url);
+
+        if webhook_config.jmap_username.is_empty() || webhook_config.jmap_password.is_empty() {
+            return Err(CliError::ConfigInvalid {
+                message: "webhook.jmap_username and webhook.jmap_password are required \
+                          (set ACTON_WEBHOOK_JMAP_USERNAME and ACTON_WEBHOOK_JMAP_PASSWORD)"
+                    .to_string(),
+            });
+        }
+
+        let worker = service.state().background_worker().ok_or_else(|| {
+            CliError::ConfigInvalid {
+                message: "BackgroundWorker not available; \
+                          enable [background_worker] in config"
+                    .to_string(),
+            }
+        })?;
+
+        let jmap_url = config.custom.jmap_url.clone();
+        let wh_config = webhook_config.clone();
+
+        worker
+            .submit("jmap-webhook", || async move {
+                webhook::run_webhook_worker(jmap_url, wh_config).await
+            })
+            .await;
+    }
+
+    service.serve().await.map_err(|e| CliError::ServeFailed {
+        message: e.to_string(),
+    })
 }
 
 fn build_routes<S>(
