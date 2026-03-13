@@ -299,6 +299,13 @@ async fn process_email_changes(
     let destroyed = changes.take_destroyed();
     let new_state = changes.take_new_state();
 
+    info!(
+        "webhook: changes since {since_state}: {} created, {} updated, {} destroyed → {new_state}",
+        created.len(),
+        updated.len(),
+        destroyed.len()
+    );
+
     if !created.is_empty() {
         info!("webhook: {} new email(s) since state {since_state}", created.len());
         fetch_and_post_emails(jmap, http, &created, config, "email.received").await?;
