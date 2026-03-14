@@ -60,9 +60,7 @@ pub struct JsContactCard {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uid: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub name: Option<Vec<NameComponent>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub full_name: Option<String>,
+    pub name: Option<ContactName>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub emails: Option<HashMap<String, ContactEmail>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -77,6 +75,14 @@ pub struct JsContactCard {
     pub notes: Option<HashMap<String, ContactNote>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub address_book_ids: Option<HashMap<String, bool>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ContactName {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub full: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub components: Option<Vec<NameComponent>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -279,15 +285,18 @@ pub struct ContactFormData {
 // ---------------------------------------------------------------------------
 
 pub fn extract_full_name(card: &JsContactCard) -> String {
-    // Prefer the explicit fullName field
-    if let Some(ref full) = card.full_name {
+    let Some(ref name) = card.name else {
+        return String::new();
+    };
+    // Prefer the explicit full name
+    if let Some(ref full) = name.full {
         let trimmed = full.trim();
         if !trimmed.is_empty() {
             return trimmed.to_string();
         }
     }
     // Fall back to constructing from name components
-    if let Some(ref components) = card.name {
+    if let Some(ref components) = name.components {
         let given: Vec<&str> = components
             .iter()
             .filter(|c| c.kind.as_deref() == Some("given"))
@@ -298,8 +307,8 @@ pub fn extract_full_name(card: &JsContactCard) -> String {
             .filter(|c| c.kind.as_deref() == Some("surname"))
             .map(|c| c.value.as_str())
             .collect();
-        let name = format!("{} {}", given.join(" "), surnames.join(" "));
-        let trimmed = name.trim();
+        let constructed = format!("{} {}", given.join(" "), surnames.join(" "));
+        let trimmed = constructed.trim();
         if !trimmed.is_empty() {
             return trimmed.to_string();
         }
@@ -310,6 +319,7 @@ pub fn extract_full_name(card: &JsContactCard) -> String {
 fn extract_given_name(card: &JsContactCard) -> String {
     card.name
         .as_ref()
+        .and_then(|n| n.components.as_ref())
         .and_then(|components| {
             components
                 .iter()
@@ -322,6 +332,7 @@ fn extract_given_name(card: &JsContactCard) -> String {
 fn extract_surname(card: &JsContactCard) -> String {
     card.name
         .as_ref()
+        .and_then(|n| n.components.as_ref())
         .and_then(|components| {
             components
                 .iter()
@@ -642,15 +653,21 @@ pub fn form_to_jscontact(form: &ContactFormData) -> JsContactCard {
     JsContactCard {
         card_type: Some("Card".to_string()),
         version: Some("1.0".to_string()),
-        name: if name_components.is_empty() {
+        name: if name_components.is_empty() && full_name.is_empty() {
             None
         } else {
-            Some(name_components)
-        },
-        full_name: if full_name.is_empty() {
-            None
-        } else {
-            Some(full_name)
+            Some(ContactName {
+                full: if full_name.is_empty() {
+                    None
+                } else {
+                    Some(full_name)
+                },
+                components: if name_components.is_empty() {
+                    None
+                } else {
+                    Some(name_components)
+                },
+            })
         },
         emails,
         phones,
@@ -709,6 +726,7 @@ async fn send_raw_jmap_request(
         .default_headers(headers)
         .redirect(reqwest::redirect::Policy::none())
         .danger_accept_invalid_certs(true)
+        .http1_only()
         .build()
         .map_err(|e| {
             MissiveError::Jmap(JmapErrorKind::ConnectionFailed {
@@ -826,7 +844,6 @@ pub async fn fetch_contacts(
             "ContactCard/query",
             serde_json::json!({
                 "filter": filter,
-                "sort": [{ "property": "name/given", "isAscending": true }],
                 "position": position,
                 "limit": limit,
                 "calculateTotal": true
@@ -1095,7 +1112,10 @@ mod tests {
 
         JsContactCard {
             id: Some(id.to_string()),
-            full_name: Some(full_name.to_string()),
+            name: Some(ContactName {
+                full: Some(full_name.to_string()),
+                components: None,
+            }),
             emails: if emails.is_empty() {
                 None
             } else {
@@ -1112,16 +1132,19 @@ mod tests {
     ) -> JsContactCard {
         JsContactCard {
             id: Some(id.to_string()),
-            name: Some(vec![
-                NameComponent {
-                    value: given.to_string(),
-                    kind: Some("given".to_string()),
-                },
-                NameComponent {
-                    value: surname.to_string(),
-                    kind: Some("surname".to_string()),
-                },
-            ]),
+            name: Some(ContactName {
+                full: None,
+                components: Some(vec![
+                    NameComponent {
+                        value: given.to_string(),
+                        kind: Some("given".to_string()),
+                    },
+                    NameComponent {
+                        value: surname.to_string(),
+                        kind: Some("surname".to_string()),
+                    },
+                ]),
+            }),
             ..Default::default()
         }
     }
@@ -1149,7 +1172,7 @@ mod tests {
     #[test]
     fn full_name_prefers_full_name_field() {
         let mut card = make_card_with_name_components("1", "Bob", "Jones");
-        card.full_name = Some("Robert Jones III".to_string());
+        card.name.as_mut().unwrap().full = Some("Robert Jones III".to_string());
         assert_eq!(extract_full_name(&card), "Robert Jones III");
     }
 
@@ -1273,7 +1296,10 @@ mod tests {
     #[test]
     fn summary_requires_id() {
         let card = JsContactCard {
-            full_name: Some("No ID".to_string()),
+            name: Some(ContactName {
+                full: Some("No ID".to_string()),
+                components: None,
+            }),
             ..Default::default()
         };
         assert!(contact_card_to_summary(&card).is_none());
@@ -1284,7 +1310,7 @@ mod tests {
     #[test]
     fn detail_from_card_with_components() {
         let mut card = make_card_with_name_components("d1", "Alice", "Wonderland");
-        card.full_name = Some("Alice Wonderland".to_string());
+        card.name.as_mut().unwrap().full = Some("Alice Wonderland".to_string());
         let detail = contact_card_to_detail(&card).unwrap();
         assert_eq!(detail.given_name, "Alice");
         assert_eq!(detail.surname, "Wonderland");
@@ -1379,7 +1405,7 @@ mod tests {
             ..Default::default()
         };
         let card = form_to_jscontact(&form);
-        assert_eq!(card.full_name.as_deref(), Some("Jane Doe"));
+        assert_eq!(card.name.as_ref().unwrap().full.as_deref(), Some("Jane Doe"));
         let emails = card.emails.as_ref().unwrap();
         assert_eq!(emails["e1"].address, "jane@example.com");
     }
@@ -1427,5 +1453,55 @@ mod tests {
     #[test]
     fn titlecase_already_upper() {
         assert_eq!(titlecase_first("Work"), "Work");
+    }
+
+    // --- Live JMAP integration tests ---
+
+    async fn live_connect() -> jmap_client::client::Client {
+        dotenvy::dotenv().ok();
+        let username = std::env::var("EMAIL_USERNAME").expect("EMAIL_USERNAME");
+        let password = std::env::var("EMAIL_PASSWORD").expect("EMAIL_PASSWORD");
+        jmap_client::client::Client::new()
+            .credentials((username.as_str(), password.as_str()))
+            .follow_redirects(["mail.govcraft.ai"])
+            .connect("https://mail.govcraft.ai")
+            .await
+            .expect("Failed to connect to JMAP server")
+    }
+
+    #[tokio::test]
+    #[ignore = "requires live JMAP server"]
+    async fn live_fetch_contacts() {
+        let client = live_connect().await;
+        let (contacts, total) = fetch_contacts(&client, 0, 50, None)
+            .await
+            .expect("fetch_contacts failed");
+        println!("Got {} contacts, total: {total:?}", contacts.len());
+        for c in &contacts {
+            println!("  - {} <{}> [{}]", c.full_name, c.primary_email, c.initials());
+        }
+        assert!(!contacts.is_empty(), "Expected at least one contact");
+    }
+
+    #[tokio::test]
+    #[ignore = "requires live JMAP server"]
+    async fn live_fetch_contact_detail() {
+        let client = live_connect().await;
+        let (contacts, _) = fetch_contacts(&client, 0, 1, None)
+            .await
+            .expect("fetch_contacts failed");
+        assert!(!contacts.is_empty(), "Need at least one contact");
+
+        let detail = fetch_contact_detail(&client, &contacts[0].id)
+            .await
+            .expect("fetch_contact_detail failed");
+        println!(
+            "Detail: {} (given={}, surname={}, emails={})",
+            detail.full_name,
+            detail.given_name,
+            detail.surname,
+            detail.emails.len()
+        );
+        assert!(!detail.full_name.is_empty());
     }
 }
