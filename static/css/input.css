@@ -44,10 +44,10 @@
     --color-primary-hover: var(--color-neutral-600);
     --color-primary-surface: var(--color-neutral-50);
 
-    /* ── Accent — mapped to neutral for grayscale pass ── */
-    --color-accent: var(--color-neutral-700);
-    --color-accent-hover: var(--color-neutral-600);
-    --color-accent-surface: var(--color-neutral-100);
+    /* ── Accent — warm amber ── */
+    --color-accent: oklch(0.55 0.15 75);
+    --color-accent-hover: oklch(0.48 0.15 75);
+    --color-accent-surface: oklch(0.95 0.04 75);
 
     /* ── Status colors — grayscale stand-ins ── */
     --color-success: oklch(0.55 0 0);
@@ -77,9 +77,9 @@
     --color-primary-hover: var(--color-neutral-300);
     --color-primary-surface: var(--color-neutral-900);
 
-    --color-accent: var(--color-neutral-400);
-    --color-accent-hover: var(--color-neutral-300);
-    --color-accent-surface: var(--color-neutral-900);
+    --color-accent: oklch(0.78 0.14 75);
+    --color-accent-hover: oklch(0.83 0.12 75);
+    --color-accent-surface: oklch(0.22 0.04 75);
 
     --color-success: oklch(0.65 0 0);
     --color-danger: oklch(0.55 0 0);
