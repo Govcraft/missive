@@ -22,9 +22,7 @@
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-sm font-semibold text-on-surface truncate">{{ event.title }}</p>
-                    {% if !event.location.is_empty() %}
-                    <p class="text-sm text-on-surface-muted truncate">{{ event.location }}</p>
-                    {% endif %}
+                    <p class="text-xs text-on-surface-muted truncate">{{ event.date_display }}{% if !event.location.is_empty() %} &middot; {{ event.location }}{% endif %}</p>
                 </div>
             </a>
         </li>

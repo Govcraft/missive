@@ -77,9 +77,24 @@ pub struct JsCalendarEvent {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub free_busy_status: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub recurrence_rule: Option<RecurrenceRule>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub created: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub updated: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecurrenceRule {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub frequency: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interval: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub count: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub until: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -110,6 +125,7 @@ pub struct EventParticipant {
 pub struct EventSummary {
     pub id: CalendarEventId,
     pub title: String,
+    pub date_display: String,
     pub time_display: String,
     pub is_all_day: bool,
     pub location: String,
@@ -324,11 +340,12 @@ pub fn event_card_to_summary(card: &JsCalendarEvent) -> Option<EventSummary> {
     let is_all_day = card.show_without_time.unwrap_or(false)
         || card.duration.as_deref() == Some("P1D");
     let start = card.start.as_deref().unwrap_or("");
-    let (_, time_display, start_date) = parse_start_display(start, is_all_day);
+    let (date_display, time_display, start_date) = parse_start_display(start, is_all_day);
 
     Some(EventSummary {
         id: CalendarEventId::from(id.as_str()),
         title,
+        date_display,
         time_display,
         is_all_day,
         location: extract_location(&card.locations),
@@ -488,6 +505,81 @@ pub fn form_to_jscalendar(form: &EventFormData, calendar_id: &str) -> JsCalendar
     }
 }
 
+/// For a recurring event, compute the occurrence date within the given range.
+/// Supports daily, weekly, monthly, yearly frequencies with optional interval.
+fn compute_recurrence_in_range(
+    card: &JsCalendarEvent,
+    original_start: NaiveDate,
+    range_start: NaiveDate,
+    range_end: NaiveDate,
+) -> Option<NaiveDate> {
+    let rule = card.recurrence_rule.as_ref()?;
+    let freq = rule.frequency.as_deref()?;
+    let interval = rule.interval.unwrap_or(1).max(1);
+
+    match freq {
+        "monthly" => {
+            let day = original_start.day();
+            // Try the same day-of-month within the range's month
+            let candidate =
+                NaiveDate::from_ymd_opt(range_start.year(), range_start.month(), day.min(28))?;
+            if candidate >= range_start && candidate <= range_end {
+                // Verify it's a valid recurrence step
+                let months_diff = (candidate.year() - original_start.year()) * 12
+                    + (candidate.month() as i32 - original_start.month() as i32);
+                if months_diff >= 0 && (months_diff as u32).is_multiple_of(interval) {
+                    return Some(candidate);
+                }
+            }
+            None
+        }
+        "weekly" => {
+            let days_since = (range_start - original_start).num_days();
+            if days_since < 0 {
+                return None;
+            }
+            let week_interval_days = interval as i64 * 7;
+            let remainder = days_since % week_interval_days;
+            let next = range_start + chrono::Duration::days(week_interval_days - remainder);
+            if next >= range_start && next <= range_end {
+                Some(next)
+            } else if remainder == 0 {
+                Some(range_start)
+            } else {
+                None
+            }
+        }
+        "daily" => {
+            let days_since = (range_start - original_start).num_days();
+            if days_since < 0 {
+                return None;
+            }
+            let remainder = days_since % interval as i64;
+            let next = if remainder == 0 {
+                range_start
+            } else {
+                range_start + chrono::Duration::days(interval as i64 - remainder)
+            };
+            if next <= range_end { Some(next) } else { None }
+        }
+        "yearly" => {
+            let candidate = NaiveDate::from_ymd_opt(
+                range_start.year(),
+                original_start.month(),
+                original_start.day().min(28),
+            )?;
+            if candidate >= range_start && candidate <= range_end {
+                let year_diff = candidate.year() - original_start.year();
+                if year_diff >= 0 && (year_diff as u32).is_multiple_of(interval) {
+                    return Some(candidate);
+                }
+            }
+            None
+        }
+        _ => None,
+    }
+}
+
 /// Extract event dates from a list of summaries for calendar dot indicators.
 pub fn event_dates_set(events: &[EventSummary]) -> HashSet<NaiveDate> {
     events.iter().filter_map(|e| e.start_date).collect()
@@ -582,7 +674,7 @@ pub async fn fetch_events_for_range(
             "CalendarEvent/get",
             serde_json::json!({
                 "ids": ids,
-                "properties": ["id", "title", "start", "duration", "showWithoutTime", "locations", "timeZone"]
+                "properties": ["id", "title", "start", "duration", "showWithoutTime", "locations", "timeZone", "recurrenceRule"]
             }),
             "g0",
         )],
@@ -598,11 +690,28 @@ pub async fn fetch_events_for_range(
         })
     })?;
 
+    let range_start = NaiveDate::parse_from_str(after, "%Y-%m-%d").ok();
+    let range_end = NaiveDate::parse_from_str(before, "%Y-%m-%d").ok();
+
     let mut events: Vec<EventSummary> = list
         .iter()
         .filter_map(|item| {
             let card: JsCalendarEvent = serde_json::from_value(item.clone()).ok()?;
-            event_card_to_summary(&card)
+            let mut summary = event_card_to_summary(&card)?;
+
+            // For recurring events whose start_date is outside the range,
+            // compute the occurrence date within the viewed range
+            if let (Some(original), Some(rs), Some(re)) =
+                (summary.start_date, range_start, range_end)
+                && (original < rs || original > re)
+                && let Some(occurrence) =
+                    compute_recurrence_in_range(&card, original, rs, re)
+            {
+                summary.start_date = Some(occurrence);
+                summary.date_display = occurrence.format("%B %-d, %Y").to_string();
+            }
+
+            Some(summary)
         })
         .collect();
 
