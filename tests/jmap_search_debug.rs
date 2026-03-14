@@ -98,6 +98,7 @@ async fn search_and_print(client: &Client, mailbox_id: &str, term: &str) {
 }
 
 #[tokio::test]
+#[ignore = "requires MISSIVE_LOGIN and MISSIVE_PASSWORD env vars"]
 async fn debug_search_results() {
     let client = connect().await;
     let inbox = inbox_id(&client).await;

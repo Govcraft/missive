@@ -230,6 +230,45 @@ trix-toolbar .trix-button-group--file-tools {
     backdrop-filter: blur(2px);
 }
 
+/* ── Contacts grid layout ── */
+.contacts-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    flex: 1;
+    min-height: 0;
+}
+
+@media (min-width: 768px) {
+    .contacts-grid {
+        grid-template-columns: 350px 1fr;
+    }
+}
+
+@media (max-width: 767px) {
+    .contacts-grid[data-active-pane="list"] > #contact-list-pane {
+        display: block;
+    }
+    .contacts-grid[data-active-pane="list"] > #contact-detail-pane {
+        display: none;
+    }
+    .contacts-grid[data-active-pane="detail"] > #contact-list-pane {
+        display: none;
+    }
+    .contacts-grid[data-active-pane="detail"] > #contact-detail-pane {
+        display: block;
+    }
+}
+
+@media (min-width: 768px) {
+    .contacts-grid > #contact-detail-pane:empty {
+        display: none;
+    }
+}
+
+.contact-row.active {
+    box-shadow: inset 4px 0 0 var(--color-neutral-600);
+}
+
 /* ── Smooth iframe loading ── */
 iframe[srcdoc] {
     transition: height 0.2s ease;

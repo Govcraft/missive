@@ -1,0 +1,120 @@
+<div class="overflow-hidden bg-surface">
+    <button type="button"
+            class="md:hidden flex items-center gap-1 px-4 pt-3 text-sm text-on-surface-muted"
+            onclick="var grid = document.querySelector('.contacts-grid'); if (grid) grid.dataset.activePane = 'list';">
+        <svg class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+        </svg>
+        Back to list
+    </button>
+    <div class="px-4 py-5 sm:px-6">
+        <h2 class="text-lg/7 font-semibold text-on-surface">{% if is_edit %}Edit Contact{% else %}New Contact{% endif %}</h2>
+    </div>
+    <div class="border-t border-border px-4 py-5 sm:px-6">
+        <form id="contact-form"
+              {% if is_edit %}
+              hx-post="/api/v1/contacts/{{ edit_id }}"
+              {% else %}
+              hx-post="/api/v1/contacts"
+              {% endif %}
+              hx-target="#contact-detail-pane"
+              hx-swap="innerHTML"
+              class="space-y-4">
+
+            <div class="flex items-center gap-3">
+                <label for="given_name" class="w-28 shrink-0 text-right text-sm/6 font-medium text-on-surface">First name</label>
+                <input id="given_name" type="text" name="given_name"
+                       {% if let Some(c) = contact %}value="{{ c.given_name }}"{% endif %}
+                       class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6" />
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label for="surname" class="w-28 shrink-0 text-right text-sm/6 font-medium text-on-surface">Last name</label>
+                <input id="surname" type="text" name="surname"
+                       {% if let Some(c) = contact %}value="{{ c.surname }}"{% endif %}
+                       class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6" />
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label for="email" class="w-28 shrink-0 text-right text-sm/6 font-medium text-on-surface">Email</label>
+                <input id="email" type="email" name="email"
+                       {% if let Some(c) = contact %}{% if !c.emails.is_empty() %}value="{{ c.emails[0].address }}"{% endif %}{% endif %}
+                       class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6"
+                       placeholder="email@example.com" />
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label for="phone" class="w-28 shrink-0 text-right text-sm/6 font-medium text-on-surface">Phone</label>
+                <input id="phone" type="tel" name="phone"
+                       {% if let Some(c) = contact %}{% if !c.phones.is_empty() %}value="{{ c.phones[0].number }}"{% endif %}{% endif %}
+                       class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6" />
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label for="organization" class="w-28 shrink-0 text-right text-sm/6 font-medium text-on-surface">Organization</label>
+                <input id="organization" type="text" name="organization"
+                       {% if let Some(c) = contact %}value="{{ c.organization }}"{% endif %}
+                       class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6" />
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label for="job_title" class="w-28 shrink-0 text-right text-sm/6 font-medium text-on-surface">Job title</label>
+                <input id="job_title" type="text" name="job_title"
+                       {% if let Some(c) = contact %}value="{{ c.job_title }}"{% endif %}
+                       class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6" />
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label for="street" class="w-28 shrink-0 text-right text-sm/6 font-medium text-on-surface">Street</label>
+                <input id="street" type="text" name="street"
+                       class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6" />
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label for="city" class="w-28 shrink-0 text-right text-sm/6 font-medium text-on-surface">City</label>
+                <input id="city" type="text" name="city"
+                       class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6" />
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label for="state" class="w-28 shrink-0 text-right text-sm/6 font-medium text-on-surface">State/Province</label>
+                <input id="state" type="text" name="state"
+                       class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6" />
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label for="postal_code" class="w-28 shrink-0 text-right text-sm/6 font-medium text-on-surface">Postal code</label>
+                <input id="postal_code" type="text" name="postal_code"
+                       class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6" />
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label for="country" class="w-28 shrink-0 text-right text-sm/6 font-medium text-on-surface">Country</label>
+                <input id="country" type="text" name="country"
+                       class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6" />
+            </div>
+
+            <div class="flex items-start gap-3">
+                <label for="notes" class="w-28 shrink-0 pt-1.5 text-right text-sm/6 font-medium text-on-surface">Notes</label>
+                <textarea id="notes" name="notes" rows="3"
+                          class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6">{% if let Some(c) = contact %}{{ c.notes }}{% endif %}</textarea>
+            </div>
+
+            <div class="flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:justify-end">
+                <span class="isolate inline-flex rounded-md shadow-xs">
+                    <button type="button"
+                        hx-get="/api/v1/contacts/cancel"
+                        hx-target="#contact-detail-pane"
+                        hx-swap="innerHTML"
+                        class="relative inline-flex items-center rounded-l-md bg-surface px-3 py-2 text-sm font-semibold text-on-surface inset-ring-1 inset-ring-border-strong hover:bg-surface-hover focus:z-10 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="relative -ml-px inline-flex items-center rounded-r-md bg-accent px-3 py-2 text-sm font-semibold text-on-surface-invert inset-ring-1 inset-ring-accent hover:bg-accent-hover focus:z-10 transition-colors">
+                        {% if is_edit %}Save{% else %}Create{% endif %}
+                    </button>
+                </span>
+            </div>
+        </form>
+    </div>
+</div>

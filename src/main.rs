@@ -15,6 +15,7 @@ use crate::jmap::{JmapUrl, new_client_cache};
 mod assets;
 pub mod cli;
 mod config;
+mod contacts;
 mod error;
 mod jmap;
 mod routes;
@@ -203,6 +204,23 @@ where
                 .route("/send", post(routes::emails::send_email))
                 .route("/drafts", post(routes::emails::save_draft))
                 .route("/flash", get(routes::emails::get_flash))
+                .route(
+                    "/contacts",
+                    get(routes::contacts::list_contacts)
+                        .post(routes::contacts::create_contact),
+                )
+                .route("/contacts/new", get(routes::contacts::new_contact_form))
+                .route("/contacts/cancel", get(routes::contacts::cancel_form))
+                .route(
+                    "/contacts/{id}",
+                    get(routes::contacts::get_contact)
+                        .post(routes::contacts::update_contact)
+                        .delete(routes::contacts::delete_contact),
+                )
+                .route(
+                    "/contacts/{id}/edit",
+                    get(routes::contacts::edit_contact_form),
+                )
                 .route("/events", get(routes::events::event_stream))
                 .layer(Extension(broadcaster))
                 .layer(Extension(client_cache.clone()))

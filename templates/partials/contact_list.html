@@ -1,0 +1,40 @@
+{% if groups.is_empty() %}
+<div class="flex items-center justify-center h-full text-sm text-on-surface-faint">
+    {% match search %}
+    {% when Some with (q) %}
+    No contacts matching &ldquo;{{ q }}&rdquo;
+    {% when None %}
+    No contacts
+    {% endmatch %}
+</div>
+{% else %}
+<nav aria-label="Directory">
+    {% for group in groups %}
+    <div class="relative">
+        <div class="sticky top-0 z-10 border-y border-b-border border-t-border bg-surface-dim px-3 py-1.5 text-sm/6 font-semibold text-on-surface">
+            <h3>{{ group.letter }}</h3>
+        </div>
+        <ul role="list" class="divide-y divide-border">
+            {% for contact in group.contacts %}
+            <li>
+                <a href="#"
+                   hx-get="/api/v1/contacts/{{ contact.id }}"
+                   hx-target="#contact-detail-pane"
+                   hx-swap="innerHTML"
+                   class="contact-row flex items-center gap-x-4 px-4 py-4 hover:bg-surface-hover transition-colors cursor-pointer"
+                   onclick="document.querySelectorAll('.contact-row').forEach(el => el.classList.remove('active', 'bg-surface-raised')); this.classList.add('active', 'bg-surface-raised'); var grid = document.querySelector('.contacts-grid'); if (grid && window.innerWidth < 768) grid.dataset.activePane = 'detail';">
+                    <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface-raised text-sm font-medium text-on-surface-secondary">
+                        {{ contact.initials() }}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-semibold text-on-surface truncate">{{ contact.full_name }}</p>
+                        <p class="text-sm text-on-surface-muted truncate">{{ contact.primary_email }}</p>
+                    </div>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+</nav>
+{% endif %}

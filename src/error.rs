@@ -10,6 +10,7 @@ pub enum JmapErrorKind {
     BlobDownloadFailed { blob_id: String, message: String },
     NoMailbox { role: String },
     NoRecipient,
+    ContactOperationFailed { operation: String, message: String },
     Unknown { message: String },
 }
 
@@ -36,6 +37,12 @@ impl std::fmt::Display for JmapErrorKind {
             }
             Self::NoRecipient => {
                 write!(f, "at least one recipient required")
+            }
+            Self::ContactOperationFailed {
+                operation,
+                message,
+            } => {
+                write!(f, "contact operation '{operation}' failed: {message}")
             }
             Self::Unknown { message } => {
                 write!(f, "{message}")
@@ -163,6 +170,18 @@ mod tests {
         assert_eq!(
             JmapErrorKind::NoRecipient.to_string(),
             "at least one recipient required"
+        );
+    }
+
+    #[test]
+    fn display_jmap_error_kind_contact_operation_failed() {
+        let kind = JmapErrorKind::ContactOperationFailed {
+            operation: "ContactCard/get".to_string(),
+            message: "not found".to_string(),
+        };
+        assert_eq!(
+            kind.to_string(),
+            "contact operation 'ContactCard/get' failed: not found"
         );
     }
 

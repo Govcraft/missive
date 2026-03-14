@@ -5,11 +5,56 @@
 {% block content %}
 {% include "partials/app_nav.html" %}
 
-<div class="lg:pl-20">
+<div class="flex flex-col h-screen lg:pl-20">
     {% include "partials/app_header.html" %}
 
-    <main class="flex flex-1 items-center justify-center" style="height: calc(100vh - 4rem)">
-        <p class="text-sm text-on-surface-faint">Contacts — coming soon</p>
+    <main class="contacts-grid" data-active-pane="list">
+        <!-- Contact list pane -->
+        <div id="contact-list-pane" class="border-r border-border overflow-hidden flex flex-col bg-surface-dim">
+            <div class="px-4 py-4 sm:px-6">
+                <button type="button"
+                    hx-get="/api/v1/contacts/new"
+                    hx-target="#contact-detail-pane"
+                    hx-swap="innerHTML"
+                    class="flex w-full items-center justify-center gap-2 rounded-md bg-accent px-3 py-2 text-sm font-semibold text-on-surface-invert shadow-xs hover:bg-accent-hover transition-colors">
+                    <svg class="size-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    New Contact
+                </button>
+            </div>
+            <div class="px-4 pb-3">
+                <input type="search" id="contact-search-input" name="search"
+                       placeholder="Search contacts..."
+                       hx-get="/api/v1/contacts"
+                       hx-trigger="input changed delay:300ms, search"
+                       hx-target="#contact-directory"
+                       hx-swap="innerHTML"
+                       class="w-full rounded-md bg-surface px-3 py-1.5 text-sm text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring" />
+            </div>
+            <div id="contact-directory" class="flex-1 overflow-y-auto"
+                 hx-get="/api/v1/contacts"
+                 hx-trigger="load, contactsUpdated from:body"
+                 hx-swap="innerHTML"
+                 hx-include="#contact-search-input">
+                <div class="p-4 text-sm text-on-surface-faint">Loading contacts...</div>
+            </div>
+        </div>
+        <!-- Contact detail pane -->
+        <div id="contact-detail-pane" class="bg-surface overflow-y-auto">
+            {% include "partials/contact_empty_state.html" %}
+        </div>
     </main>
 </div>
+
+<script>
+document.body.addEventListener('htmx:afterSwap', function(event) {
+    if (event.detail.target.id === 'contact-detail-pane' && window.innerWidth < 768) {
+        var grid = document.querySelector('.contacts-grid');
+        if (grid && event.detail.target.children.length > 0) {
+            grid.dataset.activePane = 'detail';
+        }
+    }
+});
+</script>
 {% endblock %}

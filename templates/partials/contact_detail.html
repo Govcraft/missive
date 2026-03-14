@@ -1,0 +1,134 @@
+<div class="overflow-hidden bg-surface">
+    <button type="button"
+            class="md:hidden flex items-center gap-1 px-4 pt-3 text-sm text-on-surface-muted"
+            onclick="var grid = document.querySelector('.contacts-grid'); if (grid) grid.dataset.activePane = 'list';">
+        <svg class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+        </svg>
+        Back to list
+    </button>
+    <div class="px-4 py-5 sm:px-6">
+        <div class="flex items-center gap-x-4">
+            <div class="flex size-16 shrink-0 items-center justify-center rounded-full bg-surface-raised text-xl font-semibold text-on-surface-secondary">
+                {{ contact.initials() }}
+            </div>
+            <div class="min-w-0">
+                <h2 class="text-lg/7 font-semibold text-on-surface">{{ contact.full_name }}</h2>
+                {% if !contact.organization.is_empty() %}
+                <p class="text-sm text-on-surface-muted">{{ contact.organization }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2 px-4 sm:px-6 pb-4">
+        <span class="isolate inline-flex rounded-md shadow-xs">
+            <button type="button"
+                    title="Edit"
+                    class="relative inline-flex items-center rounded-l-md bg-surface px-4 py-2 text-on-surface-secondary inset-ring-1 inset-ring-border-strong hover:bg-surface-hover focus:z-10 transition-colors"
+                    hx-get="/api/v1/contacts/{{ contact.id }}/edit"
+                    hx-target="#contact-detail-pane"
+                    hx-swap="innerHTML">
+                <span class="sr-only">Edit</span>
+                <svg class="size-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                </svg>
+            </button>
+            <button type="button"
+                    title="Delete"
+                    class="relative -ml-px inline-flex items-center rounded-r-md bg-surface px-4 py-2 text-on-surface-secondary inset-ring-1 inset-ring-border-strong hover:bg-surface-hover focus:z-10 transition-colors"
+                    hx-delete="/api/v1/contacts/{{ contact.id }}"
+                    hx-target="#contact-detail-pane"
+                    hx-swap="innerHTML"
+                    hx-confirm="Delete this contact?">
+                <span class="sr-only">Delete</span>
+                <svg class="size-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                </svg>
+            </button>
+        </span>
+
+        {% if !contact.emails.is_empty() %}
+        <a href="mailto:{{ contact.emails[0].address }}"
+           class="relative inline-flex items-center rounded-md bg-surface px-4 py-2 text-on-surface-secondary shadow-xs inset-ring-1 inset-ring-border-strong hover:bg-surface-hover focus:z-10 transition-colors"
+           title="Send email">
+            <span class="sr-only">Send email</span>
+            <svg class="size-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+            </svg>
+        </a>
+        {% endif %}
+    </div>
+    <div class="border-t border-border">
+        <dl class="divide-y divide-border">
+            {% if !contact.emails.is_empty() %}
+            <div class="px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-on-surface">Email</dt>
+                <dd class="mt-1 text-sm text-on-surface-secondary sm:col-span-2 sm:mt-0">
+                    <ul role="list" class="space-y-1">
+                        {% for email in contact.emails %}
+                        <li class="flex items-center gap-x-2">
+                            <a href="mailto:{{ email.address }}" class="text-accent hover:underline">{{ email.address }}</a>
+                            <span class="text-xs text-on-surface-faint">{{ email.label }}</span>
+                            {% if email.is_preferred %}
+                            <span class="inline-flex items-center rounded-full bg-surface-raised px-1.5 py-0.5 text-[0.625rem] font-medium text-on-surface-muted">preferred</span>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </dd>
+            </div>
+            {% endif %}
+            {% if !contact.phones.is_empty() %}
+            <div class="px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-on-surface">Phone</dt>
+                <dd class="mt-1 text-sm text-on-surface-secondary sm:col-span-2 sm:mt-0">
+                    <ul role="list" class="space-y-1">
+                        {% for phone in contact.phones %}
+                        <li class="flex items-center gap-x-2">
+                            <span>{{ phone.number }}</span>
+                            <span class="text-xs text-on-surface-faint">{{ phone.label }}</span>
+                            {% if phone.is_preferred %}
+                            <span class="inline-flex items-center rounded-full bg-surface-raised px-1.5 py-0.5 text-[0.625rem] font-medium text-on-surface-muted">preferred</span>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </dd>
+            </div>
+            {% endif %}
+            {% if !contact.addresses.is_empty() %}
+            <div class="px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-on-surface">Address</dt>
+                <dd class="mt-1 text-sm text-on-surface-secondary sm:col-span-2 sm:mt-0">
+                    <ul role="list" class="space-y-2">
+                        {% for address in contact.addresses %}
+                        <li>
+                            <span class="whitespace-pre-wrap">{{ address.formatted }}</span>
+                            <span class="text-xs text-on-surface-faint ml-2">{{ address.label }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </dd>
+            </div>
+            {% endif %}
+            {% if !contact.organization.is_empty() %}
+            <div class="px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-on-surface">Organization</dt>
+                <dd class="mt-1 text-sm text-on-surface-secondary sm:col-span-2 sm:mt-0">{{ contact.organization }}</dd>
+            </div>
+            {% endif %}
+            {% if !contact.job_title.is_empty() %}
+            <div class="px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-on-surface">Job Title</dt>
+                <dd class="mt-1 text-sm text-on-surface-secondary sm:col-span-2 sm:mt-0">{{ contact.job_title }}</dd>
+            </div>
+            {% endif %}
+            {% if !contact.notes.is_empty() %}
+            <div class="px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-on-surface">Notes</dt>
+                <dd class="mt-1 text-sm text-on-surface-secondary sm:col-span-2 sm:mt-0 whitespace-pre-wrap">{{ contact.notes }}</dd>
+            </div>
+            {% endif %}
+        </dl>
+    </div>
+</div>

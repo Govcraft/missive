@@ -77,6 +77,7 @@ fn mailbox_text(mailbox_id: &str, text: &str) -> Filter<email::query::Filter> {
 
 /// Verify that full-word JMAP text search works correctly.
 #[tokio::test]
+#[ignore = "requires MISSIVE_LOGIN and MISSIVE_PASSWORD env vars"]
 async fn text_filter_full_word_match() {
     let client = connect().await;
     let inbox = inbox_id(&client).await;
@@ -92,6 +93,7 @@ async fn text_filter_full_word_match() {
 /// full-text search. The tokenizer treats "coinbase" as a single token, so
 /// searching for "coin" does not match it.
 #[tokio::test]
+#[ignore = "requires MISSIVE_LOGIN and MISSIVE_PASSWORD env vars"]
 async fn text_filter_no_prefix_matching() {
     let client = connect().await;
     let inbox = inbox_id(&client).await;
@@ -110,6 +112,7 @@ async fn text_filter_no_prefix_matching() {
 
 /// Verify that calculateTotal works and returns a count.
 #[tokio::test]
+#[ignore = "requires MISSIVE_LOGIN and MISSIVE_PASSWORD env vars"]
 async fn calculate_total_returns_count() {
     let client = connect().await;
     let inbox = inbox_id(&client).await;

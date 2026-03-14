@@ -13,6 +13,7 @@
         <div class="flex shrink-0 items-center">
             <img src="/static/images/missive_horizontal_logotext_light_bg.png" alt="Missive" class="h-8 w-auto">
         </div>
+        {% if active_app != "contacts" && active_app != "calendar" %}
         <div class="flex flex-1 items-center justify-center px-2 lg:ml-6 lg:justify-end">
             <div class="grid w-full max-w-lg grid-cols-1 lg:max-w-xs">
                 <input type="search" name="search" id="search-input" placeholder="Search mail..."
@@ -28,6 +29,9 @@
                 </svg>
             </div>
         </div>
+        {% else %}
+        <div class="flex-1"></div>
+        {% endif %}
         <div class="flex shrink-0 items-center gap-x-4 lg:gap-x-6">
             <!-- Profile dropdown -->
             <el-dropdown class="relative">
