@@ -47,8 +47,8 @@
                         {% endif %}{% endif %}{% endif %}">
                 {{ day.day }}
                 {% if day.has_events %}
-                <span class="absolute bottom-0.5 left-1/2 -translate-x-1/2 size-1 rounded-full
-                    {% if day.is_selected || day.is_today %}bg-on-surface-invert{% else %}bg-accent{% endif %}"></span>
+                <span class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 size-1.5 rounded-full
+                    {% if day.is_selected || day.is_today %}bg-on-surface-invert{% else %}bg-on-surface{% endif %}"></span>
                 {% endif %}
             </button>
         </div>
