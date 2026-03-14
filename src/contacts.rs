@@ -707,6 +707,8 @@ async fn send_raw_jmap_request(
 
     let http = reqwest::Client::builder()
         .default_headers(headers)
+        .redirect(reqwest::redirect::Policy::none())
+        .danger_accept_invalid_certs(true)
         .build()
         .map_err(|e| {
             MissiveError::Jmap(JmapErrorKind::ConnectionFailed {
