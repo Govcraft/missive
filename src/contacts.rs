@@ -822,6 +822,43 @@ fn extract_method_response<'a>(
 // JMAP contact operations
 // ---------------------------------------------------------------------------
 
+async fn fetch_default_address_book_id(client: &Client) -> Result<String, MissiveError> {
+    let account_id = client.default_account_id();
+    let request = build_jmap_request(
+        account_id,
+        vec![(
+            "AddressBook/get",
+            serde_json::json!({
+                "properties": ["id", "isDefault"]
+            }),
+            "ab0",
+        )],
+    );
+
+    let response = send_raw_jmap_request(client, &request).await?;
+    let data = extract_method_response(&response, "ab0")?;
+
+    let list = data["list"].as_array().ok_or_else(|| {
+        MissiveError::Jmap(JmapErrorKind::ContactOperationFailed {
+            operation: "AddressBook/get".to_string(),
+            message: "no list in response".to_string(),
+        })
+    })?;
+
+    // Pick the default, or fall back to the first
+    list.iter()
+        .find(|item| item["isDefault"].as_bool() == Some(true))
+        .or_else(|| list.first())
+        .and_then(|item| item["id"].as_str())
+        .map(String::from)
+        .ok_or_else(|| {
+            MissiveError::Jmap(JmapErrorKind::ContactOperationFailed {
+                operation: "AddressBook/get".to_string(),
+                message: "no address books found".to_string(),
+            })
+        })
+}
+
 pub async fn fetch_contacts(
     client: &Client,
     position: usize,
@@ -877,7 +914,7 @@ pub async fn fetch_contacts(
             "ContactCard/get",
             serde_json::json!({
                 "ids": ids,
-                "properties": ["id", "name", "fullName", "emails", "phones", "organizations"]
+                "properties": ["id", "name", "emails", "phones", "organizations"]
             }),
             "g0",
         )],
@@ -920,7 +957,7 @@ pub async fn fetch_contact_detail(
             serde_json::json!({
                 "ids": [contact_id.as_str()],
                 "properties": [
-                    "id", "name", "fullName", "emails", "phones",
+                    "id", "name", "emails", "phones",
                     "addresses", "organizations", "titles", "notes",
                     "addressBookIds"
                 ]
@@ -967,7 +1004,11 @@ pub async fn create_contact(
     form: &ContactFormData,
 ) -> Result<ContactId, MissiveError> {
     let account_id = client.default_account_id();
-    let card = form_to_jscontact(form);
+    let mut card = form_to_jscontact(form);
+
+    // Fetch the default address book to assign the contact to it
+    let default_book_id = fetch_default_address_book_id(client).await?;
+    card.address_book_ids = Some(HashMap::from([(default_book_id, true)]));
 
     let request = build_jmap_request(
         account_id,
@@ -1481,6 +1522,38 @@ mod tests {
             println!("  - {} <{}> [{}]", c.full_name, c.primary_email, c.initials());
         }
         assert!(!contacts.is_empty(), "Expected at least one contact");
+    }
+
+    #[tokio::test]
+    #[ignore = "requires live JMAP server"]
+    async fn live_fetch_full_contact_detail() {
+        // Contact "f" was created with all fields populated
+        let client = live_connect().await;
+        let id = ContactId::from("f");
+        let detail = fetch_contact_detail(&client, &id)
+            .await
+            .expect("fetch_contact_detail failed");
+        println!("name: {}", detail.full_name);
+        println!("given: {}", detail.given_name);
+        println!("surname: {}", detail.surname);
+        println!("org: {}", detail.organization);
+        println!("title: {}", detail.job_title);
+        println!("notes: {}", detail.notes);
+        println!("emails: {:?}", detail.emails);
+        println!("phones: {:?}", detail.phones);
+        println!("addresses: {:?}", detail.addresses);
+
+        assert_eq!(detail.full_name, "Test Person");
+        assert_eq!(detail.given_name, "Test");
+        assert_eq!(detail.surname, "Person");
+        assert_eq!(detail.organization, "Acme Corp");
+        assert_eq!(detail.job_title, "Engineer");
+        assert_eq!(detail.notes, "Test notes here");
+        assert!(!detail.emails.is_empty(), "expected emails");
+        assert_eq!(detail.emails[0].address, "test@example.com");
+        assert!(!detail.phones.is_empty(), "expected phones");
+        assert_eq!(detail.phones[0].number, "555-1234");
+        assert!(!detail.addresses.is_empty(), "expected addresses");
     }
 
     #[tokio::test]
