@@ -13,11 +13,13 @@ use clap::Parser;
 use crate::jmap::{JmapUrl, new_client_cache};
 
 mod assets;
+mod calendar;
 pub mod cli;
 mod config;
 mod contacts;
 mod error;
 mod jmap;
+mod jmap_raw;
 mod routes;
 mod sanitize;
 mod session;
@@ -220,6 +222,33 @@ where
                 .route(
                     "/contacts/{id}/edit",
                     get(routes::contacts::edit_contact_form),
+                )
+                .route(
+                    "/calendar/month",
+                    get(routes::calendar::get_month),
+                )
+                .route(
+                    "/calendar/events",
+                    get(routes::calendar::list_events)
+                        .post(routes::calendar::create_event),
+                )
+                .route(
+                    "/calendar/events/new",
+                    get(routes::calendar::new_event_form),
+                )
+                .route(
+                    "/calendar/events/cancel",
+                    get(routes::calendar::cancel_form),
+                )
+                .route(
+                    "/calendar/events/{id}",
+                    get(routes::calendar::get_event)
+                        .post(routes::calendar::update_event)
+                        .delete(routes::calendar::delete_event),
+                )
+                .route(
+                    "/calendar/events/{id}/edit",
+                    get(routes::calendar::edit_event_form),
                 )
                 .route("/events", get(routes::events::event_stream))
                 .layer(Extension(broadcaster))

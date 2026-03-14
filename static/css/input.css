@@ -269,6 +269,45 @@ trix-toolbar .trix-button-group--file-tools {
     box-shadow: inset 4px 0 0 var(--color-neutral-600);
 }
 
+/* ── Calendar grid layout ── */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    flex: 1;
+    min-height: 0;
+}
+
+@media (min-width: 768px) {
+    .calendar-grid {
+        grid-template-columns: 380px 1fr;
+    }
+}
+
+@media (max-width: 767px) {
+    .calendar-grid[data-active-pane="calendar"] > #calendar-list-pane {
+        display: block;
+    }
+    .calendar-grid[data-active-pane="calendar"] > #event-detail-pane {
+        display: none;
+    }
+    .calendar-grid[data-active-pane="detail"] > #calendar-list-pane {
+        display: none;
+    }
+    .calendar-grid[data-active-pane="detail"] > #event-detail-pane {
+        display: block;
+    }
+}
+
+@media (min-width: 768px) {
+    .calendar-grid > #event-detail-pane:empty {
+        display: none;
+    }
+}
+
+.event-row.active {
+    box-shadow: inset 4px 0 0 var(--color-neutral-600);
+}
+
 /* ── Smooth iframe loading ── */
 iframe[srcdoc] {
     transition: height 0.2s ease;

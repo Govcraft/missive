@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod calendar;
 pub mod contacts;
 pub mod emails;
 pub mod events;

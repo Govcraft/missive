@@ -5,11 +5,54 @@
 {% block content %}
 {% include "partials/app_nav.html" %}
 
-<div class="lg:pl-20">
+<div class="flex flex-col h-screen lg:pl-20">
     {% include "partials/app_header.html" %}
 
-    <main class="flex flex-1 items-center justify-center" style="height: calc(100vh - 4rem)">
-        <p class="text-sm text-on-surface-faint">Calendar — coming soon</p>
+    <main class="calendar-grid" data-active-pane="calendar">
+        <!-- Calendar list pane -->
+        <div id="calendar-list-pane" class="border-r border-border overflow-hidden flex flex-col bg-surface-dim">
+            <div class="px-4 py-4 sm:px-6">
+                <button type="button"
+                    hx-get="/api/v1/calendar/events/new"
+                    hx-target="#event-detail-pane"
+                    hx-swap="innerHTML"
+                    class="flex w-full items-center justify-center gap-2 rounded-md bg-accent px-3 py-2 text-sm font-semibold text-on-surface-invert shadow-xs hover:bg-accent-hover transition-colors">
+                    <svg class="size-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    New Event
+                </button>
+            </div>
+            <!-- Mini calendar -->
+            <div id="calendar-mini" class="px-4"
+                 hx-get="/api/v1/calendar/month"
+                 hx-trigger="load, calendarUpdated from:body"
+                 hx-swap="innerHTML">
+                <div class="p-4 text-sm text-on-surface-faint">Loading calendar...</div>
+            </div>
+            <!-- Event list -->
+            <div id="event-directory" class="flex-1 overflow-y-auto px-4"
+                 hx-get="/api/v1/calendar/events"
+                 hx-trigger="load, calendarUpdated from:body"
+                 hx-swap="innerHTML">
+                <div class="p-4 text-sm text-on-surface-faint">Loading events...</div>
+            </div>
+        </div>
+        <!-- Event detail pane -->
+        <div id="event-detail-pane" class="bg-surface overflow-y-auto">
+            {% include "partials/event_empty_state.html" %}
+        </div>
     </main>
 </div>
+
+<script>
+document.body.addEventListener('htmx:afterSwap', function(event) {
+    if (event.detail.target.id === 'event-detail-pane' && window.innerWidth < 768) {
+        var grid = document.querySelector('.calendar-grid');
+        if (grid && event.detail.target.children.length > 0) {
+            grid.dataset.activePane = 'detail';
+        }
+    }
+});
+</script>
 {% endblock %}

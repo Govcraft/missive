@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 
-use acton_service::prelude::{error, trace};
+use acton_service::prelude::trace;
 use jmap_client::client::Client;
 use serde::{Deserialize, Serialize};
 
 use crate::error::{JmapErrorKind, MissiveError};
 use crate::jmap::SearchQuery;
+use crate::jmap_raw::{self, USING_CONTACTS};
 
 // ---------------------------------------------------------------------------
 // ID newtypes
@@ -689,143 +690,14 @@ fn non_empty_opt(s: &str) -> Option<String> {
 }
 
 // ---------------------------------------------------------------------------
-// Raw JMAP request infrastructure
-// ---------------------------------------------------------------------------
-
-fn build_jmap_request(
-    account_id: &str,
-    method_calls: Vec<(&str, serde_json::Value, &str)>,
-) -> serde_json::Value {
-    let calls: Vec<serde_json::Value> = method_calls
-        .into_iter()
-        .map(|(method, mut args, call_id)| {
-            args.as_object_mut()
-                .map(|obj| obj.insert("accountId".to_string(), serde_json::json!(account_id)));
-            serde_json::json!([method, args, call_id])
-        })
-        .collect();
-
-    serde_json::json!({
-        "using": [
-            "urn:ietf:params:jmap:core",
-            "urn:ietf:params:jmap:contacts"
-        ],
-        "methodCalls": calls
-    })
-}
-
-async fn send_raw_jmap_request(
-    client: &Client,
-    request_body: &serde_json::Value,
-) -> Result<serde_json::Value, MissiveError> {
-    let session = client.session();
-    let api_url = session.api_url();
-    let headers = client.headers().clone();
-
-    let http = reqwest::Client::builder()
-        .default_headers(headers)
-        .redirect(reqwest::redirect::Policy::none())
-        .danger_accept_invalid_certs(true)
-        .http1_only()
-        .build()
-        .map_err(|e| {
-            MissiveError::Jmap(JmapErrorKind::ConnectionFailed {
-                url: api_url.to_string(),
-                message: e.to_string(),
-            })
-        })?;
-
-    let body = serde_json::to_vec(request_body).map_err(|e| {
-        MissiveError::Jmap(JmapErrorKind::ContactOperationFailed {
-            operation: "serialize request".to_string(),
-            message: e.to_string(),
-        })
-    })?;
-
-    trace!("JMAP contacts request to {api_url}");
-
-    let response = http
-        .post(api_url)
-        .header("Content-Type", "application/json")
-        .body(body)
-        .send()
-        .await
-        .map_err(|e| {
-        MissiveError::Jmap(JmapErrorKind::ConnectionFailed {
-            url: api_url.to_string(),
-            message: e.to_string(),
-        })
-    })?;
-
-    if !response.status().is_success() {
-        let status = response.status();
-        let body = response.text().await.unwrap_or_default();
-        error!("JMAP contacts request failed: HTTP {status}: {body}");
-        return Err(MissiveError::Jmap(JmapErrorKind::ContactOperationFailed {
-            operation: "HTTP request".to_string(),
-            message: format!("HTTP {status}"),
-        }));
-    }
-
-    let bytes = response.bytes().await.map_err(|e| {
-        MissiveError::Jmap(JmapErrorKind::ContactOperationFailed {
-            operation: "response read".to_string(),
-            message: e.to_string(),
-        })
-    })?;
-
-    serde_json::from_slice(&bytes).map_err(|e| {
-        MissiveError::Jmap(JmapErrorKind::ContactOperationFailed {
-            operation: "response parse".to_string(),
-            message: e.to_string(),
-        })
-    })
-}
-
-fn extract_method_response<'a>(
-    response: &'a serde_json::Value,
-    call_id: &str,
-) -> Result<&'a serde_json::Value, MissiveError> {
-    let calls = response["methodResponses"]
-        .as_array()
-        .ok_or_else(|| MissiveError::Jmap(JmapErrorKind::ContactOperationFailed {
-            operation: call_id.to_string(),
-            message: "no methodResponses array".to_string(),
-        }))?;
-
-    for call in calls {
-        let arr = call.as_array();
-        if let Some(arr) = arr
-            && arr.len() >= 3
-            && arr[2].as_str() == Some(call_id)
-        {
-            // Check for error response
-            if arr[0].as_str() == Some("error") {
-                let err_type = arr[1]["type"].as_str().unwrap_or("unknown");
-                let err_desc = arr[1]["description"].as_str().unwrap_or("");
-                return Err(MissiveError::Jmap(JmapErrorKind::ContactOperationFailed {
-                    operation: call_id.to_string(),
-                    message: format!("{err_type}: {err_desc}"),
-                }));
-            }
-            return Ok(&arr[1]);
-        }
-    }
-
-    Err(MissiveError::Jmap(JmapErrorKind::ContactOperationFailed {
-        operation: call_id.to_string(),
-        message: "call ID not found in response".to_string(),
-    }))
-}
-
-// ---------------------------------------------------------------------------
 // JMAP contact operations
 // ---------------------------------------------------------------------------
 
 async fn fetch_default_address_book_id(client: &Client) -> Result<String, MissiveError> {
     let account_id = client.default_account_id();
-    let request = build_jmap_request(
+    let request = jmap_raw::build_jmap_request(
         account_id,
+        USING_CONTACTS,
         vec![(
             "AddressBook/get",
             serde_json::json!({
@@ -835,8 +707,8 @@ async fn fetch_default_address_book_id(client: &Client) -> Result<String, Missiv
         )],
     );
 
-    let response = send_raw_jmap_request(client, &request).await?;
-    let data = extract_method_response(&response, "ab0")?;
+    let response = jmap_raw::send_raw_jmap_request(client, &request).await?;
+    let data = jmap_raw::extract_method_response(&response, "ab0")?;
 
     let list = data["list"].as_array().ok_or_else(|| {
         MissiveError::Jmap(JmapErrorKind::ContactOperationFailed {
@@ -875,8 +747,9 @@ pub async fn fetch_contacts(
     };
 
     // Step 1: ContactCard/query to get IDs
-    let query_request = build_jmap_request(
+    let query_request = jmap_raw::build_jmap_request(
         account_id,
+        USING_CONTACTS,
         vec![(
             "ContactCard/query",
             serde_json::json!({
@@ -889,8 +762,8 @@ pub async fn fetch_contacts(
         )],
     );
 
-    let query_response = send_raw_jmap_request(client, &query_request).await?;
-    let query_data = extract_method_response(&query_response, "q0")?;
+    let query_response = jmap_raw::send_raw_jmap_request(client, &query_request).await?;
+    let query_data = jmap_raw::extract_method_response(&query_response, "q0")?;
 
     let ids: Vec<String> = query_data["ids"]
         .as_array()
@@ -908,8 +781,9 @@ pub async fn fetch_contacts(
     }
 
     // Step 2: ContactCard/get to fetch details
-    let get_request = build_jmap_request(
+    let get_request = jmap_raw::build_jmap_request(
         account_id,
+        USING_CONTACTS,
         vec![(
             "ContactCard/get",
             serde_json::json!({
@@ -920,8 +794,8 @@ pub async fn fetch_contacts(
         )],
     );
 
-    let get_response = send_raw_jmap_request(client, &get_request).await?;
-    let get_data = extract_method_response(&get_response, "g0")?;
+    let get_response = jmap_raw::send_raw_jmap_request(client, &get_request).await?;
+    let get_data = jmap_raw::extract_method_response(&get_response, "g0")?;
 
     let list = get_data["list"].as_array().ok_or_else(|| {
         MissiveError::Jmap(JmapErrorKind::ContactOperationFailed {
@@ -950,8 +824,9 @@ pub async fn fetch_contact_detail(
     contact_id: &ContactId,
 ) -> Result<ContactDetail, MissiveError> {
     let account_id = client.default_account_id();
-    let request = build_jmap_request(
+    let request = jmap_raw::build_jmap_request(
         account_id,
+        USING_CONTACTS,
         vec![(
             "ContactCard/get",
             serde_json::json!({
@@ -966,8 +841,8 @@ pub async fn fetch_contact_detail(
         )],
     );
 
-    let response = send_raw_jmap_request(client, &request).await?;
-    let data = extract_method_response(&response, "g0")?;
+    let response = jmap_raw::send_raw_jmap_request(client, &request).await?;
+    let data = jmap_raw::extract_method_response(&response, "g0")?;
 
     let list = data["list"].as_array().ok_or_else(|| {
         MissiveError::Jmap(JmapErrorKind::NotFound {
@@ -1010,8 +885,9 @@ pub async fn create_contact(
     let default_book_id = fetch_default_address_book_id(client).await?;
     card.address_book_ids = Some(HashMap::from([(default_book_id, true)]));
 
-    let request = build_jmap_request(
+    let request = jmap_raw::build_jmap_request(
         account_id,
+        USING_CONTACTS,
         vec![(
             "ContactCard/set",
             serde_json::json!({
@@ -1023,8 +899,8 @@ pub async fn create_contact(
         )],
     );
 
-    let response = send_raw_jmap_request(client, &request).await?;
-    let data = extract_method_response(&response, "s0")?;
+    let response = jmap_raw::send_raw_jmap_request(client, &request).await?;
+    let data = jmap_raw::extract_method_response(&response, "s0")?;
 
     // Check for creation errors
     if let Some(not_created) = data["notCreated"].as_object()
@@ -1059,8 +935,9 @@ pub async fn update_contact(
     let account_id = client.default_account_id();
     let card = form_to_jscontact(form);
 
-    let request = build_jmap_request(
+    let request = jmap_raw::build_jmap_request(
         account_id,
+        USING_CONTACTS,
         vec![(
             "ContactCard/set",
             serde_json::json!({
@@ -1072,8 +949,8 @@ pub async fn update_contact(
         )],
     );
 
-    let response = send_raw_jmap_request(client, &request).await?;
-    let data = extract_method_response(&response, "s0")?;
+    let response = jmap_raw::send_raw_jmap_request(client, &request).await?;
+    let data = jmap_raw::extract_method_response(&response, "s0")?;
 
     // Check for update errors
     if let Some(not_updated) = data["notUpdated"].as_object()
@@ -1097,8 +974,9 @@ pub async fn delete_contact(
 ) -> Result<(), MissiveError> {
     let account_id = client.default_account_id();
 
-    let request = build_jmap_request(
+    let request = jmap_raw::build_jmap_request(
         account_id,
+        USING_CONTACTS,
         vec![(
             "ContactCard/set",
             serde_json::json!({
@@ -1108,8 +986,8 @@ pub async fn delete_contact(
         )],
     );
 
-    let response = send_raw_jmap_request(client, &request).await?;
-    let data = extract_method_response(&response, "s0")?;
+    let response = jmap_raw::send_raw_jmap_request(client, &request).await?;
+    let data = jmap_raw::extract_method_response(&response, "s0")?;
 
     // Check for destroy errors
     if let Some(not_destroyed) = data["notDestroyed"].as_object()

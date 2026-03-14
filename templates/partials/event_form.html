@@ -1,0 +1,103 @@
+<div class="overflow-hidden bg-surface">
+    <button type="button"
+            class="md:hidden flex items-center gap-1 px-4 pt-3 text-sm text-on-surface-muted"
+            onclick="var grid = document.querySelector('.calendar-grid'); if (grid) grid.dataset.activePane = 'calendar';">
+        <svg class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+        </svg>
+        Back to calendar
+    </button>
+    <div class="px-4 py-5 sm:px-6">
+        <h2 class="text-lg/7 font-semibold text-on-surface">{% if is_edit %}Edit Event{% else %}New Event{% endif %}</h2>
+    </div>
+    <div class="border-t border-border px-4 py-5 sm:px-6">
+        <form id="event-form"
+              {% if is_edit %}
+              hx-post="/api/v1/calendar/events/{{ edit_id }}"
+              {% else %}
+              hx-post="/api/v1/calendar/events"
+              {% endif %}
+              hx-target="#event-detail-pane"
+              hx-swap="innerHTML"
+              class="space-y-4">
+
+            <div class="flex items-center gap-3">
+                <label for="title" class="w-28 shrink-0 text-right text-sm/6 font-medium text-on-surface">Title</label>
+                <input id="title" type="text" name="title"
+                       {% if let Some(e) = event %}value="{{ e.title }}"{% endif %}
+                       class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6"
+                       placeholder="Event title" />
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label for="start_date" class="w-28 shrink-0 text-right text-sm/6 font-medium text-on-surface">Date</label>
+                <input id="start_date" type="date" name="start_date"
+                       {% if let Some(e) = event %}value="{{ e.start_date }}"{% endif %}
+                       class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6" />
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label for="start_time" class="w-28 shrink-0 text-right text-sm/6 font-medium text-on-surface">Time</label>
+                <input id="start_time" type="time" name="start_time"
+                       {% if let Some(e) = event %}value="{{ e.start_time }}"{% endif %}
+                       class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6" />
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label for="is_all_day" class="w-28 shrink-0 text-right text-sm/6 font-medium text-on-surface">All day</label>
+                <div class="flex-1">
+                    <input id="is_all_day" type="checkbox" name="is_all_day" value="true"
+                           {% if let Some(e) = event %}{% if e.is_all_day %}checked{% endif %}{% endif %}
+                           class="size-4 rounded border-border-strong text-accent focus:ring-ring" />
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label for="duration_hours" class="w-28 shrink-0 text-right text-sm/6 font-medium text-on-surface">Duration</label>
+                <div class="flex items-center gap-2 flex-1">
+                    <input id="duration_hours" type="number" name="duration_hours" min="0" max="24"
+                           {% if let Some(e) = event %}value="{{ e.duration_hours }}"{% endif %}
+                           class="w-20 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6"
+                           placeholder="0" />
+                    <span class="text-sm text-on-surface-muted">hrs</span>
+                    <input id="duration_minutes" type="number" name="duration_minutes" min="0" max="59"
+                           {% if let Some(e) = event %}value="{{ e.duration_minutes }}"{% endif %}
+                           class="w-20 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6"
+                           placeholder="0" />
+                    <span class="text-sm text-on-surface-muted">min</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label for="location" class="w-28 shrink-0 text-right text-sm/6 font-medium text-on-surface">Location</label>
+                <input id="location" type="text" name="location"
+                       {% if let Some(e) = event %}value="{{ e.location }}"{% endif %}
+                       class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6"
+                       placeholder="Location" />
+            </div>
+
+            <div class="flex items-start gap-3">
+                <label for="description" class="w-28 shrink-0 pt-1.5 text-right text-sm/6 font-medium text-on-surface">Description</label>
+                <textarea id="description" name="description" rows="3"
+                          class="min-w-0 flex-1 rounded-md bg-surface px-3 py-1.5 text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6"
+                          placeholder="Event description">{% if let Some(e) = event %}{{ e.description }}{% endif %}</textarea>
+            </div>
+
+            <div class="flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:justify-end">
+                <span class="isolate inline-flex rounded-md shadow-xs">
+                    <button type="button"
+                        hx-get="/api/v1/calendar/events/cancel"
+                        hx-target="#event-detail-pane"
+                        hx-swap="innerHTML"
+                        class="relative inline-flex items-center rounded-l-md bg-surface px-3 py-2 text-sm font-semibold text-on-surface inset-ring-1 inset-ring-border-strong hover:bg-surface-hover focus:z-10 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="relative -ml-px inline-flex items-center rounded-r-md bg-accent px-3 py-2 text-sm font-semibold text-on-surface-invert inset-ring-1 inset-ring-accent hover:bg-accent-hover focus:z-10 transition-colors">
+                        {% if is_edit %}Save{% else %}Create{% endif %}
+                    </button>
+                </span>
+            </div>
+        </form>
+    </div>
+</div>
