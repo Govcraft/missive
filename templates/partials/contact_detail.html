@@ -60,75 +60,99 @@
     </div>
     <div class="border-t border-border">
         <dl class="divide-y divide-border">
-            {% if !contact.emails.is_empty() %}
             <div class="px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt class="text-sm font-medium text-on-surface">Email</dt>
-                <dd class="mt-1 text-sm text-on-surface-secondary sm:col-span-2 sm:mt-0">
+                <dd class="mt-1 text-sm sm:col-span-2 sm:mt-0">
+                    {% if !contact.emails.is_empty() %}
                     <ul role="list" class="space-y-1">
                         {% for email in contact.emails %}
                         <li class="flex items-center gap-x-2">
                             <a href="mailto:{{ email.address }}" class="text-accent hover:underline">{{ email.address }}</a>
+                            {% if !email.label.is_empty() %}
                             <span class="text-xs text-on-surface-faint">{{ email.label }}</span>
+                            {% endif %}
                             {% if email.is_preferred %}
                             <span class="inline-flex items-center rounded-full bg-surface-raised px-1.5 py-0.5 text-[0.625rem] font-medium text-on-surface-muted">preferred</span>
                             {% endif %}
                         </li>
                         {% endfor %}
                     </ul>
+                    {% else %}
+                    <span class="text-on-surface-faint italic">Not set</span>
+                    {% endif %}
                 </dd>
             </div>
-            {% endif %}
-            {% if !contact.phones.is_empty() %}
             <div class="px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt class="text-sm font-medium text-on-surface">Phone</dt>
-                <dd class="mt-1 text-sm text-on-surface-secondary sm:col-span-2 sm:mt-0">
+                <dd class="mt-1 text-sm sm:col-span-2 sm:mt-0">
+                    {% if !contact.phones.is_empty() %}
                     <ul role="list" class="space-y-1">
                         {% for phone in contact.phones %}
                         <li class="flex items-center gap-x-2">
-                            <span>{{ phone.number }}</span>
+                            <span class="text-on-surface-secondary">{{ phone.number }}</span>
+                            {% if !phone.label.is_empty() %}
                             <span class="text-xs text-on-surface-faint">{{ phone.label }}</span>
+                            {% endif %}
                             {% if phone.is_preferred %}
                             <span class="inline-flex items-center rounded-full bg-surface-raised px-1.5 py-0.5 text-[0.625rem] font-medium text-on-surface-muted">preferred</span>
                             {% endif %}
                         </li>
                         {% endfor %}
                     </ul>
+                    {% else %}
+                    <span class="text-on-surface-faint italic">Not set</span>
+                    {% endif %}
                 </dd>
             </div>
-            {% endif %}
-            {% if !contact.addresses.is_empty() %}
             <div class="px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt class="text-sm font-medium text-on-surface">Address</dt>
-                <dd class="mt-1 text-sm text-on-surface-secondary sm:col-span-2 sm:mt-0">
+                <dd class="mt-1 text-sm sm:col-span-2 sm:mt-0">
+                    {% if !contact.addresses.is_empty() %}
                     <ul role="list" class="space-y-2">
                         {% for address in contact.addresses %}
                         <li>
-                            <span class="whitespace-pre-wrap">{{ address.formatted }}</span>
+                            <span class="text-on-surface-secondary whitespace-pre-wrap">{{ address.formatted }}</span>
+                            {% if !address.label.is_empty() %}
                             <span class="text-xs text-on-surface-faint ml-2">{{ address.label }}</span>
+                            {% endif %}
                         </li>
                         {% endfor %}
                     </ul>
+                    {% else %}
+                    <span class="text-on-surface-faint italic">Not set</span>
+                    {% endif %}
                 </dd>
             </div>
-            {% endif %}
-            {% if !contact.organization.is_empty() %}
             <div class="px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt class="text-sm font-medium text-on-surface">Organization</dt>
-                <dd class="mt-1 text-sm text-on-surface-secondary sm:col-span-2 sm:mt-0">{{ contact.organization }}</dd>
+                <dd class="mt-1 text-sm sm:col-span-2 sm:mt-0">
+                    {% if !contact.organization.is_empty() %}
+                    <span class="text-on-surface-secondary">{{ contact.organization }}</span>
+                    {% else %}
+                    <span class="text-on-surface-faint italic">Not set</span>
+                    {% endif %}
+                </dd>
             </div>
-            {% endif %}
-            {% if !contact.job_title.is_empty() %}
             <div class="px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt class="text-sm font-medium text-on-surface">Job Title</dt>
-                <dd class="mt-1 text-sm text-on-surface-secondary sm:col-span-2 sm:mt-0">{{ contact.job_title }}</dd>
+                <dd class="mt-1 text-sm sm:col-span-2 sm:mt-0">
+                    {% if !contact.job_title.is_empty() %}
+                    <span class="text-on-surface-secondary">{{ contact.job_title }}</span>
+                    {% else %}
+                    <span class="text-on-surface-faint italic">Not set</span>
+                    {% endif %}
+                </dd>
             </div>
-            {% endif %}
-            {% if !contact.notes.is_empty() %}
             <div class="px-4 py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
                 <dt class="text-sm font-medium text-on-surface">Notes</dt>
-                <dd class="mt-1 text-sm text-on-surface-secondary sm:col-span-2 sm:mt-0 whitespace-pre-wrap">{{ contact.notes }}</dd>
+                <dd class="mt-1 text-sm sm:col-span-2 sm:mt-0">
+                    {% if !contact.notes.is_empty() %}
+                    <span class="text-on-surface-secondary whitespace-pre-wrap">{{ contact.notes }}</span>
+                    {% else %}
+                    <span class="text-on-surface-faint italic">Not set</span>
+                    {% endif %}
+                </dd>
             </div>
-            {% endif %}
         </dl>
     </div>
 </div>
