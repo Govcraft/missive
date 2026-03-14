@@ -223,6 +223,7 @@ pub struct EmailSummary {
     pub is_unread: bool,
     pub has_attachment: bool,
     pub is_flagged: bool,
+    pub keywords: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -242,6 +243,7 @@ pub struct EmailDetail {
     pub to_emails: String,
     pub cc_emails: String,
     pub is_flagged: bool,
+    pub keywords: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -392,6 +394,7 @@ pub async fn fetch_emails(
             is_unread: !e.keywords().contains(&"$seen"),
             has_attachment: e.has_attachment(),
             is_flagged: e.keywords().contains(&"$flagged"),
+            keywords: extract_custom_keywords(&e.keywords()),
         })
         .collect();
 
@@ -474,6 +477,7 @@ pub async fn fetch_email_detail(
         to_emails: format_addresses_raw(email.to()),
         cc_emails: format_addresses_raw(email.cc()),
         is_flagged: email.keywords().contains(&"$flagged"),
+        keywords: extract_custom_keywords(&email.keywords()),
     })
 }
 
@@ -1158,6 +1162,18 @@ fn role_sort_priority(role: &str) -> u8 {
     }
 }
 
+/// Extract custom (non-system) keywords from a JMAP keyword list.
+/// Filters out any keyword starting with `$` and returns the rest sorted alphabetically.
+pub fn extract_custom_keywords(keywords: &[&str]) -> Vec<String> {
+    let mut custom: Vec<String> = keywords
+        .iter()
+        .filter(|k| !k.starts_with('$'))
+        .map(|k| (*k).to_string())
+        .collect();
+    custom.sort();
+    custom
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used)]
@@ -1575,5 +1591,35 @@ mod tests {
         assert!(json.contains("\"text\""));
         assert!(json.contains("hello"));
         assert!(json.contains("AND"));
+    }
+
+    // --- extract_custom_keywords tests ---
+
+    #[test]
+    fn extract_custom_keywords_filters_system_keywords() {
+        let keywords = vec!["$seen", "$flagged", "work", "$draft", "personal"];
+        let result = extract_custom_keywords(&keywords);
+        assert_eq!(result, vec!["personal", "work"]);
+    }
+
+    #[test]
+    fn extract_custom_keywords_empty_when_all_system() {
+        let keywords = vec!["$seen", "$flagged", "$draft"];
+        let result = extract_custom_keywords(&keywords);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn extract_custom_keywords_empty_input() {
+        let keywords: Vec<&str> = vec![];
+        let result = extract_custom_keywords(&keywords);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn extract_custom_keywords_sorted_alphabetically() {
+        let keywords = vec!["zebra", "alpha", "$seen", "middle"];
+        let result = extract_custom_keywords(&keywords);
+        assert_eq!(result, vec!["alpha", "middle", "zebra"]);
     }
 }

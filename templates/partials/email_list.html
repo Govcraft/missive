@@ -54,6 +54,13 @@
             <div class="text-sm truncate{% if email.is_unread %} font-medium text-on-surface{% else %} text-on-surface-muted{% endif %}">
                 {{ email.subject }}
             </div>
+            {% if !email.keywords.is_empty() %}
+            <div class="flex flex-wrap gap-1 mt-0.5">
+                {% for kw in email.keywords %}
+                <span class="inline-flex items-center rounded-full bg-surface-raised px-2 py-0.5 text-[0.625rem] font-medium text-on-surface-muted">{{ kw }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
             <div class="text-xs text-on-surface-faint line-clamp-2 mt-0.5">
                 {{ email.preview }}
             </div>

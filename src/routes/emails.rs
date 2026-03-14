@@ -949,6 +949,7 @@ mod tests {
             to_emails: "bob@example.com".to_string(),
             cc_emails: String::new(),
             is_flagged: false,
+            keywords: Vec::new(),
         }
     }
 
