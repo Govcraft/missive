@@ -1,5 +1,6 @@
 use acton_service::prelude::*;
 use acton_service::session::{FlashMessage, FlashMessages, Session};
+use askama::Template;
 use chrono::{Datelike, Local, NaiveDate};
 
 use crate::calendar::{
@@ -68,7 +69,7 @@ pub struct EventListParams {
 pub async fn get_month(
     AuthenticatedClient(client, _, _): AuthenticatedClient,
     Query(params): Query<MonthParams>,
-) -> std::result::Result<impl IntoResponse, MissiveError> {
+) -> std::result::Result<Response, MissiveError> {
     let today = Local::now().date_naive();
     let year = params.year.unwrap_or_else(|| today.year());
     let month = params.month.unwrap_or_else(|| today.month());
@@ -82,9 +83,30 @@ pub async fn get_month(
 
     let calendar_month = calendar::build_calendar_month(year, month, None, &event_dates);
 
-    Ok(HtmlTemplate::page(CalendarMiniTemplate {
+    // Build month name heading for event list
+    let heading = NaiveDate::from_ymd_opt(year, month, 1)
+        .map(|d| d.format("%B %Y").to_string())
+        .unwrap_or_else(|| format!("{year}-{month:02}"));
+
+    // Render calendar grid + OOB event list in one response
+    let cal_html = CalendarMiniTemplate {
         month: calendar_month,
-    }))
+    }
+    .render()
+    .map_err(|e| MissiveError::HttpResponse(e.to_string()))?;
+
+    let events_html = EventListTemplate {
+        events,
+        date_heading: heading,
+    }
+    .render()
+    .map_err(|e| MissiveError::HttpResponse(e.to_string()))?;
+
+    let combined = format!(
+        "{cal_html}<div id=\"event-directory\" hx-swap-oob=\"innerHTML\">{events_html}</div>"
+    );
+
+    Ok(Html(combined).into_response())
 }
 
 pub async fn list_events(

@@ -1063,6 +1063,26 @@ mod tests {
 
     #[tokio::test]
     #[ignore = "requires live JMAP server"]
+    async fn live_fetch_july_events_with_dates() {
+        let client = live_connect().await;
+        let events = fetch_events_for_range(&client, "2025-07-01", "2025-07-31")
+            .await
+            .expect("fetch_events failed");
+        println!("July 2025: {} events", events.len());
+        let dates = event_dates_set(&events);
+        println!("Event dates: {:?}", dates);
+        for e in &events {
+            println!(
+                "  - {} | start_date={:?} | time={}",
+                e.title, e.start_date, e.time_display
+            );
+        }
+        assert!(!events.is_empty(), "Expected July events");
+        assert!(!dates.is_empty(), "Expected event dates set to be non-empty");
+    }
+
+    #[tokio::test]
+    #[ignore = "requires live JMAP server"]
     async fn live_fetch_event_detail() {
         let client = live_connect().await;
         let events = fetch_events_for_range(&client, "2025-01-01", "2026-12-31")
