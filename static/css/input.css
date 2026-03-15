@@ -5,6 +5,9 @@
 @theme {
     --font-sans: "Inter", sans-serif;
 
+    /* ── Sky overrides (v4 defaults are too light) ── */
+    --color-sky-950: #082f49;
+
     /* ── Raw color scale — pure grayscale for contrast/IA work ── */
 
     --color-neutral-950: oklch(0.13 0 0);
@@ -42,8 +45,8 @@
     --color-ring: var(--color-neutral-500);
 
     /* ── Primary — sky ── */
-    --color-primary: var(--color-sky-500);
-    --color-primary-hover: var(--color-sky-600);
+    --color-primary: var(--color-sky-800);
+    --color-primary-hover: var(--color-sky-900);
     --color-primary-surface: var(--color-sky-50);
 
     /* ── Accent — amber ── */
@@ -71,14 +74,14 @@
     --color-on-surface-muted: oklch(0.58 0 0);
     --color-on-surface-faint: oklch(0.45 0 0);
     --color-on-surface-invert: var(--color-neutral-950);
-    --color-on-primary: var(--color-sky-950);
+    --color-on-primary: var(--color-sky-50);
 
     --color-border: oklch(0.25 0 0);
     --color-border-strong: oklch(0.32 0 0);
     --color-ring: oklch(0.50 0 0);
 
-    --color-primary: var(--color-sky-500);
-    --color-primary-hover: var(--color-sky-400);
+    --color-primary: var(--color-sky-800);
+    --color-primary-hover: var(--color-sky-900);
     --color-primary-surface: var(--color-sky-950);
 
     --color-accent: var(--color-amber-200);

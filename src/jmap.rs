@@ -211,6 +211,8 @@ pub struct MailboxInfo {
     pub name: String,
     pub role: String,
     pub unread_count: usize,
+    pub parent_id: Option<MailboxId>,
+    pub depth: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -292,6 +294,7 @@ pub async fn fetch_mailboxes(client: &Client) -> Result<Vec<MailboxInfo>, Missiv
         mailbox::Property::Name,
         mailbox::Property::Role,
         mailbox::Property::UnreadEmails,
+        mailbox::Property::ParentId,
     ]);
 
     let response = request.send_get_mailbox().await.map_err(|e| {
@@ -310,11 +313,45 @@ pub async fn fetch_mailboxes(client: &Client) -> Result<Vec<MailboxInfo>, Missiv
             name: m.name().unwrap_or("(unnamed)").to_string(),
             role: role_to_string(&m.role()),
             unread_count: m.unread_emails(),
+            parent_id: m.parent_id().map(|id| MailboxId::from(id.to_string())),
+            depth: 0,
         })
         .collect();
 
     trace!("Fetched {} mailboxes from JMAP", mailboxes.len());
 
+    compute_mailbox_depths(&mut mailboxes);
+    mailboxes = sort_mailbox_tree(mailboxes);
+
+    Ok(mailboxes)
+}
+
+fn compute_mailbox_depths(mailboxes: &mut [MailboxInfo]) {
+    let id_to_parent: std::collections::HashMap<String, Option<String>> = mailboxes
+        .iter()
+        .map(|m| {
+            (
+                m.id.to_string(),
+                m.parent_id.as_ref().map(|p| p.to_string()),
+            )
+        })
+        .collect();
+
+    for mailbox in mailboxes.iter_mut() {
+        let mut depth = 0;
+        let mut current = mailbox.parent_id.as_ref().map(|p| p.to_string());
+        while let Some(pid) = current {
+            depth += 1;
+            current = id_to_parent.get(&pid).and_then(|p| p.clone());
+        }
+        mailbox.depth = depth;
+    }
+}
+
+fn sort_mailbox_tree(mut mailboxes: Vec<MailboxInfo>) -> Vec<MailboxInfo> {
+    use std::collections::HashMap;
+
+    // Build a map of parent_id -> children, sorted by role priority then name
     mailboxes.sort_by(|a, b| {
         let a_priority = role_sort_priority(&a.role);
         let b_priority = role_sort_priority(&b.role);
@@ -323,7 +360,29 @@ pub async fn fetch_mailboxes(client: &Client) -> Result<Vec<MailboxInfo>, Missiv
             .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
     });
 
-    Ok(mailboxes)
+    let mut children_map: HashMap<Option<String>, Vec<MailboxInfo>> = HashMap::new();
+    for mailbox in mailboxes {
+        let parent_key = mailbox.parent_id.as_ref().map(|p| p.to_string());
+        children_map.entry(parent_key).or_default().push(mailbox);
+    }
+
+    let mut result = Vec::new();
+    collect_children(&children_map, &None, &mut result);
+    result
+}
+
+fn collect_children(
+    children_map: &std::collections::HashMap<Option<String>, Vec<MailboxInfo>>,
+    parent_key: &Option<String>,
+    result: &mut Vec<MailboxInfo>,
+) {
+    if let Some(children) = children_map.get(parent_key) {
+        for child in children {
+            let child_id = Some(child.id.to_string());
+            result.push(child.clone());
+            collect_children(children_map, &child_id, result);
+        }
+    }
 }
 
 pub async fn fetch_emails(

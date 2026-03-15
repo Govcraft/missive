@@ -7,11 +7,11 @@
            hx-swap="innerHTML"
            class="mailbox-item flex items-center justify-between rounded-md px-4 py-1.5 text-sm hover:bg-surface-hover cursor-pointer transition-colors sm:px-6{% if mailbox.role == "inbox" %} bg-surface-selected text-on-surface-secondary font-semibold{% endif %}"
            {% if mailbox.role == "inbox" %}hx-trigger="load, click" {% endif %}onclick="document.querySelectorAll('.mailbox-item').forEach(el => el.classList.remove('bg-surface-selected', 'text-on-surface-secondary', 'font-semibold')); this.classList.add('bg-surface-selected', 'text-on-surface-secondary', 'font-semibold'); document.getElementById('active-mailbox-id').value = '{{ mailbox.id }}'; document.getElementById('search-input').value = ''; var grid = document.querySelector('.missive-grid'); if (grid) grid.dataset.activePane = 'emails';">
-            <span class="truncate">
+            <span class="truncate"{% if mailbox.depth > 0 %} style="padding-left: {{ mailbox.depth * 16 }}px"{% endif %}>
                 {{ mailbox.name }}
             </span>
             {% if mailbox.unread_count > 0 %}
-            <span class="ml-2 inline-flex items-center justify-center min-w-6 rounded-full bg-surface-raised px-1.5 py-0.5 text-xs font-medium text-on-surface-secondary inset-ring inset-ring-border text-center">
+            <span class="ml-2 inline-flex items-center justify-center min-w-6 rounded-full bg-sky-100 dark:bg-sky-950 px-1.5 py-0.5 text-xs font-medium text-sky-950 dark:text-sky-50 text-center">
                 {{ mailbox.unread_count }}
             </span>
             {% endif %}

@@ -483,6 +483,8 @@ mod tests {
             name: role.to_string(),
             role: role.to_string(),
             unread_count: 0,
+            parent_id: None,
+            depth: 0,
         }
     }
 
