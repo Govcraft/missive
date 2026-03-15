@@ -2,8 +2,11 @@
   <img src="branding/missive_logomark.png" alt="Missive" width="128" height="128">
 </p>
 
+<h3 align="center">Self-hostable mail, calendar, and contacts</h3>
+
 <p align="center">
-  A fast, self-hostable webmail client built with Rust and the JMAP protocol.
+  A personal information manager built with Rust that ships as a single binary.<br>
+  Works with any JMAP-compliant mail server. No JavaScript framework required.
 </p>
 
 <p align="center">
@@ -16,63 +19,79 @@
 
 ## Overview
 
-Missive is a webmail client that ships as a single binary with all assets embedded. It communicates with your mail server over [JMAP](https://jmap.io/) (RFC 8620), the modern replacement for IMAP, and renders a responsive three-pane UI entirely server-side with HTMX -- no JavaScript framework required.
+Missive is a self-hostable PIM suite -- mail, calendar, and contacts -- that runs as a single binary with all assets embedded. It communicates with your mail server over [JMAP](https://jmap.io/) (RFC 8620), the modern successor to IMAP, and renders a responsive UI entirely server-side with HTMX. The result is a fast, lightweight frontend with no client-side JavaScript framework, no build-time asset pipeline to maintain, and no external file tree to deploy.
 
-Missive is built on [acton-service](https://govcraft.github.io/acton-service/), a Rust service framework that provides configuration, session management, health checks, and HTMX integration out of the box. Built and tested against [Stalwart Mail Server](https://stalw.art/), Missive works with any JMAP-compliant mail server.
+Missive is built on [acton-service](https://govcraft.github.io/acton-service/), a production-ready Rust backend framework that provides type-enforced API versioning, automatic health/readiness endpoints, structured logging, session management, and SSE broadcasting out of the box. Built and tested against [Stalwart Mail Server](https://stalw.art/), Missive works with any JMAP-compliant server.
 
 ## Features
 
+Missive provides a complete webmail experience with calendar and contacts, installable as a progressive web app on desktop and mobile.
+
+### Mail
+
 - **Three-pane layout** -- mailbox sidebar, message list, and reading pane in a single view
-- **Compose, reply, forward** -- rich text editor with file attachments and CC/BCC fields
-- **Search** -- full-text search across mailbox contents
-- **Keyboard shortcuts** -- navigate, compose, reply, delete, and archive without a mouse
-- **Star and flag** -- mark important messages with `$flagged` support
-- **Bulk actions** -- multi-select messages for delete, move, or read/unread toggling
-- **Archive and spam** -- one-click archive or spam classification
+- **Compose, reply, forward** -- rich text editor (Trix) with file attachments and CC/BCC
+- **Full-text search** -- search across mailbox contents via JMAP query
+- **Bulk actions** -- multi-select messages for delete, move, archive, spam, or read/unread toggling
+- **Star and flag** -- mark important messages with `$flagged` keyword support
 - **Move between folders** -- organize messages across mailboxes
-- **Real-time updates** -- server-sent events (SSE) push new mail notifications instantly
-- **HTML sanitization** -- safe rendering of HTML emails with Ammonia-based filtering
-- **Single binary** -- all static assets embedded via `rust-embed`; no file tree to manage
-- **Session backends** -- in-memory sessions for development or Redis for production persistence
-- **Dual deployment** -- run locally as a standalone binary or behind a reverse proxy with Docker
+- **HTML sanitization** -- safe rendering of HTML emails via Ammonia-based filtering
+
+### Calendar and Contacts
+
+- **Calendar view** -- browse and manage calendar events
+- **Contact management** -- view and organize contacts
+- **Unified navigation** -- switch between Mail, Calendar, and Contacts from the sidebar
+
+### Experience
+
+- **Progressive web app** -- installable on desktop and mobile for an app-like experience
+- **Mobile responsive** -- fully functional on phones and tablets
+- **Dark mode** -- system-aware theme with manual toggle
+- **Keyboard shortcuts** -- navigate, compose, reply, delete, and archive without a mouse
+- **Browser notifications** -- opt-in push notifications for new mail arrivals
+
+### Operations
+
+- **Single binary** -- all static assets embedded via `rust-embed`; nothing to deploy but the executable
+- **Session backends** -- in-memory sessions for development, Redis for production persistence
+- **Health checks** -- automatic `/health` (liveness) and `/ready` (readiness) endpoints
+- **CLI tooling** -- interactive setup wizard (`missive setup`), configuration validator (`missive sanity`), and config generator (`missive config`)
+- **Structured logging** -- JSON-formatted logs with optional systemd journald integration
+
+### Integrations
+
+- **Real-time updates** -- server-sent events (SSE) push new mail and mailbox changes to the browser instantly
+- **Webhook delivery** -- HTTP POST notifications for email lifecycle events with optional HMAC-SHA256 signing
+- **JMAP standard** -- works with any compliant server, not tied to a single vendor
 
 ## Screenshots
 
-> Screenshots coming soon. Missive features a clean, branded three-pane interface with a dark sidebar, message list, and reading pane.
+> Screenshots coming soon. Missive features a three-pane interface with dark mode support, mobile-responsive layout, and an installable PWA experience.
 
 ## Getting Started
 
-### Prerequisites
-
-- A running JMAP-compliant mail server (e.g., [Stalwart](https://stalw.art/))
-- For building from source: Rust 1.85+ (2024 edition), Node.js 22+, and [pnpm](https://pnpm.io/)
+Missive requires a running JMAP-compliant mail server such as [Stalwart](https://stalw.art/). For building from source, you need Rust 1.85+ (2024 edition), Node.js 22+, and [pnpm](https://pnpm.io/).
 
 ### Quick Start: Binary
 
 Build and run Missive directly on your machine.
 
 ```bash
-# Clone the repository
+# Clone and build
 git clone https://github.com/Govcraft/missive.git
 cd missive
-
-# Install JS dependencies and build static assets
-pnpm install
-pnpm run build
-
-# Build the release binary
+pnpm install && pnpm run build
 cargo build --release
 
-# Create a minimal config
-cat > config.toml << 'EOF'
-jmap_url = "https://your-mail-server.example.com"
+# Generate a starter config
+./target/release/missive config --output config.toml
+# Edit config.toml to set your jmap_url
 
-[service]
-name = "missive"
-port = 8080
-EOF
+# Or run the interactive setup wizard
+./target/release/missive setup
 
-# Run
+# Start the server
 ./target/release/missive
 ```
 
@@ -81,7 +100,6 @@ Open `http://localhost:8080` and log in with your mail server credentials.
 ### Quick Start: Docker
 
 ```bash
-# Run with Docker, passing config via environment variables
 docker build -t missive .
 docker run -p 8080:8080 \
   -e ACTON_JMAP_URL=https://your-mail-server.example.com \
@@ -92,7 +110,7 @@ The Docker image uses a multi-stage build that produces a minimal Debian-based r
 
 ## Configuration
 
-Missive is configured through a `config.toml` file, environment variables, or both. Configuration is powered by acton-service's [Figment-based config system](https://govcraft.github.io/acton-service/docs/configuration). Environment variables take precedence and use the `ACTON_` prefix (the convention from acton-service).
+Missive uses a layered configuration system powered by acton-service's [Figment-based config](https://govcraft.github.io/acton-service/docs/configuration). Environment variables take precedence over config files and use the `ACTON_` prefix.
 
 ### Config File
 
@@ -105,8 +123,8 @@ name = "missive"
 port = 8080
 
 [session]
-storage = "memory"              # "memory" or "redis"
-redis_url = "redis://localhost:6379"  # required when storage = "redis"
+storage = "memory"                        # "memory" or "redis"
+redis_url = "redis://localhost:6379"       # required when storage = "redis"
 ```
 
 Place the file in any of these locations (highest priority first):
@@ -130,9 +148,11 @@ Place the file in any of these locations (highest priority first):
 
 **In-memory** sessions work out of the box for development and single-instance deployments. Sessions are lost on restart.
 
-**Redis** sessions persist across restarts and support multi-instance deployments. Enable by setting `session.storage = "redis"` and providing a `redis_url`.
+**Redis** sessions persist across restarts and support multi-instance deployments behind a load balancer. Enable by setting `session.storage = "redis"` and providing a `redis_url`.
 
 ## Deployment
+
+Missive supports three deployment models: Docker Compose with automatic HTTPS, systemd for bare-metal servers, and manual reverse proxy configurations.
 
 ### Docker Compose with Traefik
 
@@ -141,29 +161,27 @@ The included `docker-compose.yml` sets up Missive behind Traefik with automatic 
 ```bash
 # Create a .env file
 cat > .env << 'EOF'
-DOMAIN=mail.example.com                              # Public domain Traefik will route to Missive
-ACME_EMAIL=admin@example.com                         # Email for Let's Encrypt certificate notifications
-ACTON_JMAP_URL=https://your-mail-server.example.com  # Your JMAP mail server URL
+DOMAIN=mail.example.com
+ACME_EMAIL=admin@example.com
+ACTON_JMAP_URL=https://your-mail-server.example.com
 EOF
 
 # Start the stack
 docker compose up -d
 ```
 
-To enable Redis-backed sessions, add these to your `.env` file and activate the Redis profile:
+To enable Redis-backed sessions, add these to your `.env` and activate the Redis profile:
 
 ```bash
-# Append to .env
 echo 'ACTON_SESSION_STORAGE=redis' >> .env
 echo 'ACTON_SESSION_REDIS_URL=redis://redis:6379' >> .env
 
-# Start with the Redis profile
 docker compose --profile redis up -d
 ```
 
 ### Systemd Service
 
-A unit file is provided at `deploy/missive.service` for running Missive as a system service.
+A hardened unit file is provided at `deploy/missive.service` with `ProtectSystem=strict`, `ProtectHome=true`, and `NoNewPrivileges=true`.
 
 ```bash
 # Install the binary
@@ -182,80 +200,92 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now missive
 ```
 
-The unit runs with `ProtectSystem=strict`, `ProtectHome=true`, and `NoNewPrivileges=true` for hardened security.
-
 ### Reverse Proxy
 
-Missive binds to `0.0.0.0:8080` by default. When running behind a reverse proxy (nginx, Caddy, Traefik), forward traffic to that port. Missive serves the `/health` endpoint for liveness probes and `/ready` for readiness checks.
+Missive binds to `0.0.0.0:8080` by default. When running behind nginx, Caddy, or Traefik, forward traffic to that port and configure for SSE:
 
-Key proxy considerations:
-- **SSE support** -- disable response buffering for `/api/v1/events` so server-sent events stream correctly
-- **Timeouts** -- SSE connections are long-lived; set proxy read timeouts accordingly
-- **WebSocket** -- not required; Missive uses SSE, not WebSockets
+- **Disable response buffering** for `/api/v1/events` so server-sent events stream correctly
+- **Extend read timeouts** -- SSE connections are long-lived
+- **WebSocket is not required** -- Missive uses SSE, not WebSockets
 
-## Development
+Use `/health` for liveness probes and `/ready` for readiness checks.
 
-### Build from Source
+## Webhooks
 
-```bash
-# Install dependencies
-pnpm install
+Missive can deliver HTTP POST notifications for email lifecycle events, enabling integrations without polling. A background worker monitors JMAP state changes and posts structured JSON payloads to your configured endpoint.
 
-# Build CSS (required before cargo build, since assets are embedded)
-pnpm run build
+### Webhook Configuration
 
-# Quick compile check
-cargo check
-
-# Full build
-cargo build
-
-# Run with live CSS rebuilding (in a separate terminal)
-pnpm run dev:css
+```toml
+[webhook]
+url = "https://your-app.example.com/webhook"
+secret = "your-hmac-secret"
+jmap_username = "user@example.com"
+jmap_password = "password"
+include_body = false
+ping_interval = 60
 ```
 
-### Running Tests
+| Field | Description | Default |
+|-------|-------------|---------|
+| `url` | Endpoint to receive webhook POST requests | *(required)* |
+| `secret` | HMAC-SHA256 signing key (omit to disable signing) | *(none)* |
+| `jmap_username` | JMAP account for monitoring state changes | *(required)* |
+| `jmap_password` | Password for the JMAP account | *(required)* |
+| `include_body` | Include email body text in payloads | `false` |
+| `ping_interval` | JMAP EventSource ping interval in seconds | `60` |
 
-```bash
-cargo nextest run                        # All tests
-cargo nextest run jmap::tests            # Module-specific tests
-cargo nextest run parse_recipient_emails # Tests matching a name
+### Event Types
+
+| Event | Trigger |
+|-------|---------|
+| `email.received` | New email arrives |
+| `email.updated` | Email flags or mailbox assignment changes |
+| `email.deleted` | Email permanently deleted |
+
+### Payload Format
+
+Payloads for `email.received` and `email.updated` events:
+
+```json
+{
+  "event": "email.received",
+  "email_id": "M1234",
+  "message_id": ["<abc@example.com>"],
+  "thread_id": "T5678",
+  "mailbox_ids": ["inbox-id"],
+  "subject": "Hello",
+  "from": [{"name": "Alice", "email": "alice@example.com"}],
+  "to": [{"name": "Bob", "email": "bob@example.com"}],
+  "cc": [],
+  "reply_to": [],
+  "in_reply_to": [],
+  "references": [],
+  "preview": "First 256 characters...",
+  "body_text": null,
+  "has_attachment": false,
+  "sent_at": 1710000000,
+  "received_at": 1710000001,
+  "keywords": ["$seen"],
+  "size": 4096
+}
 ```
 
-### Linting
+Payloads for `email.deleted` events contain only `event` and `email_id`.
 
-```bash
-cargo clippy
-```
+### HMAC Signing
 
-The codebase enforces `#![forbid(unsafe_code)]` and `#![deny(clippy::unwrap_used, clippy::expect_used)]`. Clippy lints are always fixed at the source, never suppressed with directives.
-
-### Project Structure
+When a `secret` is configured, every POST includes an `X-Signature` header:
 
 ```
-missive/
-  src/
-    main.rs          # Route registration, app startup, session layer
-    config.rs        # MissiveConfig with jmap_url and page_size
-    session.rs       # Session types, AuthenticatedClient extractor
-    jmap.rs          # All JMAP protocol operations and type-safe ID newtypes
-    sanitize.rs      # Ammonia-based HTML sanitization for email rendering
-    error.rs         # MissiveError enum with HTMX-aware responses
-    assets.rs        # rust-embed static asset serving
-    routes/
-      auth.rs        # Login and logout handlers
-      pages.rs       # Full page renders (inbox, calendar, contacts)
-      emails.rs      # Email CRUD, compose, reply, forward, attachments
-      mailboxes.rs   # Mailbox sidebar listing
-      events.rs      # SSE endpoint bridging JMAP EventSource
-  templates/         # Askama HTML templates (base layout + HTMX partials)
-  static/
-    css/input.css    # Tailwind v4 source (the only CSS file to edit)
-  deploy/            # Systemd unit file
-  branding/          # Logo and logomark assets
+X-Signature: sha256=734cc62f32841568f45715aeb9f4d7891324e6d948e4c6c60c0621cdac48623a
 ```
 
-### Architecture
+Verify by computing HMAC-SHA256 of the raw request body with your secret and comparing to the hex digest after the `sha256=` prefix.
+
+## Architecture
+
+Missive acts as a thin translation layer between HTMX in the browser and JMAP on the server. There is no intermediate database -- all state lives on your mail server. Every request flows through the same pipeline:
 
 ```
 Browser                   Missive                        Mail Server
@@ -279,24 +309,54 @@ Browser                   Missive                        Mail Server
   |<........................|<...............................|
 ```
 
-Missive acts as a thin translation layer between HTMX in the browser and JMAP on the server. Route handlers receive an `AuthenticatedClient` extractor that gates every API call behind a valid session and caches JMAP clients per user to avoid re-authentication on each request.
+JMAP clients are cached per user to avoid re-authentication on each request. Emails are sent using JMAP's two-step pattern: `Email/set` creates the message in Drafts, then `EmailSubmission/set` submits it and moves it to Sent.
 
-Emails are sent using JMAP's two-step pattern: `Email/set` creates the message in Drafts, then `EmailSubmission/set` submits it with `onSuccessUpdateEmail` to move it to Sent.
-
-**Tech stack:**
+### Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Language | Rust (2024 edition, no `unsafe`) |
+| Language | Rust (2024 edition, `#![forbid(unsafe_code)]`) |
 | HTTP framework | axum |
 | Service framework | [acton-service](https://govcraft.github.io/acton-service/) |
-| Protocol | JMAP (jmap-client crate) |
-| Templates | Askama (compiled, type-checked) |
-| Interactivity | HTMX + SSE |
+| Protocol | JMAP ([jmap-client](https://crates.io/crates/jmap-client)) |
+| Templates | Askama (compiled, type-checked at build time) |
+| Interactivity | HTMX + server-sent events |
 | Styling | Tailwind CSS v4 |
 | Rich text editor | Trix |
 | HTML sanitization | Ammonia |
 | Asset embedding | rust-embed |
+
+## Development
+
+Missive uses standard Rust tooling with a Tailwind CSS build step for frontend assets.
+
+### Build from Source
+
+```bash
+pnpm install
+pnpm run build          # Build vendor assets + CSS
+cargo check             # Quick compile verification
+cargo build             # Full build
+
+# Watch mode for CSS changes (run in a separate terminal)
+pnpm run dev:css
+```
+
+### Running Tests
+
+```bash
+cargo nextest run                        # All tests
+cargo nextest run jmap::tests            # Module-specific tests
+cargo nextest run parse_recipient_emails # Tests matching a name
+```
+
+### Linting
+
+```bash
+cargo clippy
+```
+
+The codebase enforces `#![forbid(unsafe_code)]` and `#![deny(clippy::unwrap_used, clippy::expect_used)]`. Clippy lints are always fixed at the source, never suppressed with directives.
 
 ## Contributing
 
@@ -307,13 +367,13 @@ Contributions are welcome. To get started:
 3. Follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for commit messages
 4. Open a pull request with a clear description of the change
 
-Please fix clippy lints rather than suppressing them. The project values a clean, auditable codebase.
-
 ## License
 
 Missive is dual-licensed:
 
-- **[GNU Affero General Public License v3.0 (AGPL-3.0)](https://www.gnu.org/licenses/agpl-3.0.html)** -- free for open-source use
-- **Commercial license** -- available for organizations that need an alternative to AGPL-3.0 terms (details to follow)
+- **[GNU Affero General Public License v3.0 (AGPL-3.0)](https://www.gnu.org/licenses/agpl-3.0.html)** -- free for open-source use, self-hosting, and modification
+- **Commercial license** -- available for organizations that need terms beyond AGPL-3.0, including bundling, OEM distribution, or proprietary modifications
+
+For commercial licensing inquiries, contact [Govcraft](https://govcraft.ai).
 
 Copyright (c) 2025-2026 Govcraft
