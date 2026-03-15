@@ -193,20 +193,21 @@ trix-toolbar .trix-button-group--file-tools {
 /* ── Mobile pane switching ── */
 @media (max-width: 767px) {
     .missive-grid[data-active-pane="mailboxes"] > #mailbox-pane { display: block; }
-    .missive-grid[data-active-pane="mailboxes"] > #email-list-pane { display: none; }
+    .missive-grid[data-active-pane="mailboxes"] > #email-list-wrapper { display: none; }
     .missive-grid[data-active-pane="mailboxes"] > #email-detail-pane { display: none; }
 
     .missive-grid[data-active-pane="emails"] > #mailbox-pane { display: none; }
-    .missive-grid[data-active-pane="emails"] > #email-list-pane { display: block; }
+    .missive-grid[data-active-pane="emails"] > #email-list-wrapper { display: flex; }
     .missive-grid[data-active-pane="emails"] > #email-detail-pane { display: none; }
 
     .missive-grid[data-active-pane="detail"] > #mailbox-pane { display: none; }
-    .missive-grid[data-active-pane="detail"] > #email-list-pane { display: none; }
+    .missive-grid[data-active-pane="detail"] > #email-list-wrapper { display: none; }
     .missive-grid[data-active-pane="detail"] > #email-detail-pane { display: block; }
 }
 
 @media (min-width: 768px) and (max-width: 1279px) {
-    .missive-grid > #email-detail-pane:empty { display: none; }
+    .missive-grid > #email-detail-pane:empty,
+    .missive-grid > #email-detail-pane:has(> .flex:only-child) { display: none; }
 }
 
 /* ── Collapsible sidebar ── */
