@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Missive</title>
+    <style>
+        body {
+            font-family: Inter, system-ui, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #082f49;
+            color: #e0f2fe;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+        }
+        h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+        p { color: #7dd3fc; font-size: 0.875rem; }
+        button {
+            margin-top: 1.5rem;
+            padding: 0.5rem 1.5rem;
+            background: #0ea5e9;
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        button:hover { background: #0284c7; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>You're offline</h1>
+        <p>Missive needs an internet connection to check your email.</p>
+        <button onclick="location.reload()">Try again</button>
+    </div>
+</body>
+</html>

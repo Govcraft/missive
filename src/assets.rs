@@ -15,5 +15,22 @@ pub async fn serve_embedded(Path(path): Path<String>) -> Response {
 
     let mime = file.metadata.mimetype();
 
+    // Allow the service worker to control the root scope even though it's
+    // served from /static/sw.js. Without this header browsers restrict the
+    // scope to the directory the SW is served from.
+    if path == "sw.js" {
+        return (
+            [
+                (header::CONTENT_TYPE, mime),
+                (
+                    header::HeaderName::from_static("service-worker-allowed"),
+                    "/",
+                ),
+            ],
+            Body::from(file.data),
+        )
+            .into_response();
+    }
+
     ([(header::CONTENT_TYPE, mime)], Body::from(file.data)).into_response()
 }

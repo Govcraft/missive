@@ -1,0 +1,21 @@
+{
+  "name": "Missive",
+  "short_name": "Missive",
+  "description": "Self-hosted web email client",
+  "start_url": "/inbox",
+  "display": "standalone",
+  "theme_color": "#082f49",
+  "background_color": "#082f49",
+  "icons": [
+    {
+      "src": "/static/images/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/images/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
