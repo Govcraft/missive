@@ -1,4 +1,4 @@
-<div class="overflow-hidden bg-surface">
+<div class="overflow-hidden min-h-full">
     <button type="button"
             class="md:hidden flex items-center gap-1 px-4 pt-3 text-sm text-on-surface-muted"
             onclick="var grid = document.querySelector('.missive-grid'); if (grid) grid.dataset.activePane = 'emails';">
@@ -12,7 +12,7 @@
         {% if !email.keywords.is_empty() %}
         <div class="flex flex-wrap gap-1.5 mt-2">
             {% for kw in email.keywords %}
-            <span class="inline-flex items-center rounded-full bg-surface-raised px-2.5 py-0.5 text-xs font-medium text-on-surface-muted">{{ kw }}</span>
+            <span class="inline-flex items-center rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-surface">{{ kw }}</span>
             {% endfor %}
         </div>
         {% endif %}
@@ -173,7 +173,7 @@
                 <div class="ml-4 shrink-0">
                     <a href="/api/v1/attachments/{{ att.blob_id }}?name={{ att.name }}"
                        download="{{ att.name }}"
-                       class="font-medium text-primary hover:text-primary-hover">Download</a>
+                       class="font-medium text-accent hover:text-accent-hover">Download</a>
                 </div>
             </li>
             {% endfor %}
@@ -189,7 +189,8 @@
             class="w-full border-0"
             style="min-height: 200px;"
             referrerpolicy="no-referrer"
-            title="Email content">
+            title="Email content"
+            onload="(function(f){var d=f.contentDocument;if(!d)return;var s=d.createElement('style');s.textContent='@media(prefers-color-scheme:dark){html{color-scheme:dark;filter:invert(0.88) hue-rotate(180deg);}}';if(document.documentElement.classList.contains('dark')){s.textContent='html{color-scheme:dark;filter:invert(0.88) hue-rotate(180deg);}html img,html video{filter:invert(1) hue-rotate(180deg);}'}d.head.appendChild(s);var h=d.body.scrollHeight;f.style.height=h+'px';})(this)">
         </iframe>
         {% when None %}
         <pre class="whitespace-pre-wrap text-sm text-on-surface font-sans leading-relaxed">{{ email.body_text }}</pre>
