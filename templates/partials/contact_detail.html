@@ -9,11 +9,11 @@
     </button>
     <div class="px-4 py-5 sm:px-6">
         <div class="flex items-center gap-x-4">
-            <div class="flex size-16 shrink-0 items-center justify-center rounded-full bg-lime-800 text-xl font-semibold text-lime-200">
+            <div class="flex size-16 shrink-0 items-center justify-center rounded-full bg-sky-800 text-xl font-semibold text-sky-200">
                 {{ contact.initials() }}
             </div>
             <div class="min-w-0">
-                <h2 class="text-lg/7 font-semibold text-lime-800 dark:text-lime-200">{{ contact.full_name }}</h2>
+                <h2 class="text-lg/7 font-semibold text-sky-800 dark:text-sky-200">{{ contact.full_name }}</h2>
                 {% if !contact.organization.is_empty() %}
                 <p class="text-sm text-on-surface-muted">{{ contact.organization }}</p>
                 {% endif %}
@@ -67,7 +67,7 @@
                     <ul role="list" class="space-y-1">
                         {% for email in contact.emails %}
                         <li class="flex items-center gap-x-2">
-                            <a href="mailto:{{ email.address }}" class="text-lime-800 dark:text-lime-200 hover:underline">{{ email.address }}</a>
+                            <a href="mailto:{{ email.address }}" class="text-sky-800 dark:text-sky-200 hover:underline">{{ email.address }}</a>
                             {% if !email.label.is_empty() %}
                             <span class="text-xs text-on-surface-faint">{{ email.label }}</span>
                             {% endif %}

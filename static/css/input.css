@@ -34,17 +34,17 @@
     --color-on-surface-muted: var(--color-neutral-500);
     --color-on-surface-faint: var(--color-neutral-400);
     --color-on-surface-invert: oklch(1 0 0);
-    --color-on-primary: var(--color-lime-950);
+    --color-on-primary: var(--color-sky-50);
 
     /* ── Semantic border/ring tokens ── */
     --color-border: var(--color-neutral-100);
     --color-border-strong: var(--color-neutral-200);
     --color-ring: var(--color-neutral-500);
 
-    /* ── Primary — lime ── */
-    --color-primary: var(--color-lime-500);
-    --color-primary-hover: var(--color-lime-600);
-    --color-primary-surface: var(--color-lime-50);
+    /* ── Primary — sky ── */
+    --color-primary: var(--color-sky-500);
+    --color-primary-hover: var(--color-sky-600);
+    --color-primary-surface: var(--color-sky-50);
 
     /* ── Accent — amber ── */
     --color-accent: var(--color-amber-700);
@@ -71,15 +71,15 @@
     --color-on-surface-muted: oklch(0.58 0 0);
     --color-on-surface-faint: oklch(0.45 0 0);
     --color-on-surface-invert: var(--color-neutral-950);
-    --color-on-primary: var(--color-lime-950);
+    --color-on-primary: var(--color-sky-950);
 
     --color-border: oklch(0.25 0 0);
     --color-border-strong: oklch(0.32 0 0);
     --color-ring: oklch(0.50 0 0);
 
-    --color-primary: var(--color-lime-500);
-    --color-primary-hover: var(--color-lime-400);
-    --color-primary-surface: var(--color-lime-950);
+    --color-primary: var(--color-sky-500);
+    --color-primary-hover: var(--color-sky-400);
+    --color-primary-surface: var(--color-sky-950);
 
     --color-accent: var(--color-amber-200);
     --color-accent-hover: var(--color-amber-100);
@@ -283,12 +283,25 @@ trix-toolbar .trix-button-group--file-tools {
 .contact-row.active,
 .event-row.active {
     position: relative;
+    color: oklch(0 0 0);
+}
+
+.dark .email-row.bg-surface-selected,
+.dark .mailbox-item.bg-surface-selected,
+.dark .contact-row.active,
+.dark .event-row.active {
+    color: oklch(1 0 0);
 }
 
 .contact-row.active > div > p:first-child,
 .event-row.active > div > p:first-child {
-    color: var(--color-on-surface);
+    color: oklch(0 0 0);
     font-weight: 600;
+}
+
+.dark .contact-row.active > div > p:first-child,
+.dark .event-row.active > div > p:first-child {
+    color: oklch(1 0 0);
 }
 
 .email-row.bg-surface-selected::before,
@@ -356,8 +369,8 @@ trix-toolbar .trix-button-group--file-tools {
 }
 
 .contact-row.active .rounded-full {
-    background-color: var(--color-lime-800);
-    color: var(--color-lime-200);
+    background-color: var(--color-sky-800);
+    color: var(--color-sky-200);
 }
 
 /* ── Calendar grid layout ── */
