@@ -41,15 +41,15 @@
     --color-border-strong: var(--color-neutral-200);
     --color-ring: var(--color-neutral-500);
 
-    /* ── Primary — warm cream ── */
-    --color-primary: oklch(0.7157 0.1822 113.88);
-    --color-primary-hover: oklch(0.67 0.18 113.88);
-    --color-primary-surface: oklch(0.95 0.03 109.88);
+    /* ── Primary — lime ── */
+    --color-primary: var(--color-lime-600);
+    --color-primary-hover: var(--color-lime-700);
+    --color-primary-surface: var(--color-lime-50);
 
-    /* ── Accent — warm amber ── */
-    --color-accent: oklch(0.68 0.19 75);
-    --color-accent-hover: oklch(0.62 0.19 75);
-    --color-accent-surface: oklch(0.95 0.05 75);
+    /* ── Accent — amber ── */
+    --color-accent: var(--color-amber-500);
+    --color-accent-hover: var(--color-amber-600);
+    --color-accent-surface: var(--color-amber-50);
 
     /* ── Status colors — grayscale stand-ins ── */
     --color-success: oklch(0.55 0 0);
@@ -77,13 +77,13 @@
     --color-border-strong: oklch(0.32 0 0);
     --color-ring: oklch(0.50 0 0);
 
-    --color-primary: oklch(0.9157 0.2322 113.88);
-    --color-primary-hover: oklch(0.87 0.23 113.88);
-    --color-primary-surface: oklch(0.22 0.04 113.88);
+    --color-primary: var(--color-lime-400);
+    --color-primary-hover: var(--color-lime-300);
+    --color-primary-surface: var(--color-lime-950);
 
-    --color-accent: oklch(0.78 0.14 75);
-    --color-accent-hover: oklch(0.83 0.12 75);
-    --color-accent-surface: oklch(0.22 0.04 75);
+    --color-accent: var(--color-amber-400);
+    --color-accent-hover: var(--color-amber-300);
+    --color-accent-surface: var(--color-amber-950);
 
     --color-success: oklch(0.65 0 0);
     --color-danger: oklch(0.55 0 0);
@@ -278,27 +278,36 @@ trix-toolbar .trix-button-group--file-tools {
     transition: background-color 0.15s ease;
 }
 
-.email-row.bg-surface-selected {
-    box-shadow: inset 4px 0 0 var(--color-accent);
-    color: var(--color-primary);
+.email-row.bg-surface-selected,
+.mailbox-item.bg-surface-selected,
+.contact-row.active,
+.event-row.active {
+    position: relative;
+}
+
+.contact-row.active > div > p:first-child,
+.event-row.active > div > p:first-child {
+    color: var(--color-on-surface);
+    font-weight: 600;
+}
+
+.email-row.bg-surface-selected::before,
+.mailbox-item.bg-surface-selected::before,
+.contact-row.active::before,
+.event-row.active::before {
+    content: '';
+    position: absolute;
+    left: -0.5rem;
+    top: 0;
+    bottom: 0;
+    width: 0.5px;
+    background-color: var(--color-primary);
+    border-radius: 0;
 }
 
 /* ── Mailbox sidebar active indicator ── */
 .mailbox-item {
     transition: background-color 0.1s ease, color 0.1s ease;
-}
-
-.mailbox-item.bg-surface-selected {
-    box-shadow: inset 4px 0 0 var(--color-accent);
-    color: var(--color-primary);
-}
-
-.contact-row.active {
-    color: var(--color-primary);
-}
-
-.event-row.active {
-    color: var(--color-primary);
 }
 
 /* ── Empty state breathing room ── */
@@ -346,13 +355,9 @@ trix-toolbar .trix-button-group--file-tools {
     }
 }
 
-.contact-row.active {
-    box-shadow: inset 4px 0 0 var(--color-accent);
-}
-
 .contact-row.active .rounded-full {
-    background-color: var(--color-accent);
-    color: var(--color-on-surface-invert);
+    background-color: var(--color-lime-800);
+    color: var(--color-lime-200);
 }
 
 /* ── Calendar grid layout ── */
@@ -388,10 +393,6 @@ trix-toolbar .trix-button-group--file-tools {
     .calendar-grid > #event-detail-pane:empty {
         display: none;
     }
-}
-
-.event-row.active {
-    box-shadow: inset 4px 0 0 var(--color-accent);
 }
 
 /* ── Smooth iframe loading ── */

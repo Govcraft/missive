@@ -15,13 +15,13 @@
                onclick="document.querySelectorAll('.event-row').forEach(el => el.classList.remove('active', 'bg-surface-selected')); this.classList.add('active', 'bg-surface-selected'); var grid = document.querySelector('.calendar-grid'); if (grid && window.innerWidth < 768) grid.dataset.activePane = 'detail';">
                 <div class="shrink-0 w-16 pt-0.5">
                     {% if event.is_all_day %}
-                    <span class="inline-flex items-center rounded-full bg-accent-surface px-2 py-0.5 text-xs font-medium text-accent">All day</span>
+                    <span class="inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-surface">All day</span>
                     {% else %}
                     <span class="text-sm font-medium text-on-surface-secondary">{{ event.time_display }}</span>
                     {% endif %}
                 </div>
                 <div class="min-w-0 flex-1">
-                    <p class="text-sm font-semibold text-on-surface truncate">{{ event.title }}</p>
+                    <p class="text-sm font-medium text-on-surface-secondary truncate">{{ event.title }}</p>
                     <p class="text-xs text-on-surface-muted truncate">{{ event.date_display }}{% if !event.location.is_empty() %} &middot; {{ event.location }}{% endif %}</p>
                 </div>
             </a>

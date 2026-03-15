@@ -11,7 +11,7 @@
 <nav aria-label="Directory">
     {% for group in groups %}
     <div class="relative">
-        <div class="sticky top-0 z-10 border-y border-b-border border-t-border bg-surface-dim px-3 py-1.5 text-sm/6 font-semibold text-accent">
+        <div class="sticky top-0 z-10 border-y border-b-border border-t-border bg-surface-dim px-3 py-1.5 text-sm/6 font-semibold text-primary">
             <h3>{{ group.letter }}</h3>
         </div>
         <ul role="list" class="px-2">
@@ -27,7 +27,7 @@
                         {{ contact.initials() }}
                     </div>
                     <div class="min-w-0 flex-1">
-                        <p class="text-sm font-semibold text-on-surface truncate">{{ contact.full_name }}</p>
+                        <p class="text-sm font-medium text-on-surface-secondary truncate">{{ contact.full_name }}</p>
                         <p class="text-sm text-on-surface-muted truncate">{{ contact.primary_email }}</p>
                     </div>
                 </a>

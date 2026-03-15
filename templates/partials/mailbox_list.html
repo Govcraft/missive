@@ -5,9 +5,9 @@
            hx-get="/api/v1/emails?mailbox_id={{ mailbox.id }}"
            hx-target="#email-list-pane"
            hx-swap="innerHTML"
-           class="mailbox-item flex items-center justify-between rounded-md px-4 py-1.5 text-sm hover:bg-surface-hover cursor-pointer transition-colors sm:px-6{% if mailbox.role == "inbox" %} bg-surface-selected text-on-surface-secondary{% endif %}"
-           {% if mailbox.role == "inbox" %}hx-trigger="load, click" {% endif %}onclick="document.querySelectorAll('.mailbox-item').forEach(el => el.classList.remove('bg-surface-selected', 'text-on-surface-secondary')); this.classList.add('bg-surface-selected', 'text-on-surface-secondary'); document.getElementById('active-mailbox-id').value = '{{ mailbox.id }}'; document.getElementById('search-input').value = ''; var grid = document.querySelector('.missive-grid'); if (grid) grid.dataset.activePane = 'emails';">
-            <span class="truncate{% if mailbox.role == "inbox" %} font-semibold{% endif %}">
+           class="mailbox-item flex items-center justify-between rounded-md px-4 py-1.5 text-sm hover:bg-surface-hover cursor-pointer transition-colors sm:px-6{% if mailbox.role == "inbox" %} bg-surface-selected text-on-surface-secondary font-semibold{% endif %}"
+           {% if mailbox.role == "inbox" %}hx-trigger="load, click" {% endif %}onclick="document.querySelectorAll('.mailbox-item').forEach(el => el.classList.remove('bg-surface-selected', 'text-on-surface-secondary', 'font-semibold')); this.classList.add('bg-surface-selected', 'text-on-surface-secondary', 'font-semibold'); document.getElementById('active-mailbox-id').value = '{{ mailbox.id }}'; document.getElementById('search-input').value = ''; var grid = document.querySelector('.missive-grid'); if (grid) grid.dataset.activePane = 'emails';">
+            <span class="truncate">
                 {{ mailbox.name }}
             </span>
             {% if mailbox.unread_count > 0 %}

@@ -19,9 +19,9 @@
     <span class="ml-auto text-xs text-on-surface-faint">{{ total }} {% if *total == 1 %}email{% else %}emails{% endif %}</span>
     {% endif %}
 </div>
-<ul role="list" class="px-2">
+<ul role="list">
 {% for email in emails %}
-    <li id="email-row-{{ email.id }}" class="email-row flex items-start min-w-0 overflow-hidden rounded-md hover:bg-surface-hover transition-colors{% if email.is_unread %} bg-surface-hover/50{% else %} bg-surface{% endif %}">
+    <li id="email-row-{{ email.id }}" class="email-row flex items-start min-w-0 overflow-hidden hover:bg-surface-hover transition-colors{% if email.is_unread %} bg-surface-hover/50{% else %} bg-surface{% endif %}">
         <div class="flex items-center shrink-0 pl-2 pt-3 sm:pl-4 sm:pt-4">
             <input type="checkbox" class="bulk-checkbox h-4 w-4 rounded border-border-strong text-primary focus:ring-ring cursor-pointer"
                    value="{{ email.id }}"
@@ -57,7 +57,7 @@
             {% if !email.keywords.is_empty() %}
             <div class="flex flex-wrap gap-1 mt-0.5">
                 {% for kw in email.keywords %}
-                <span class="inline-flex items-center rounded-full bg-accent-surface px-2 py-0.5 text-[0.625rem] font-medium text-accent">{{ kw }}</span>
+                <span class="inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-[0.625rem] font-medium text-accent-surface">{{ kw }}</span>
                 {% endfor %}
             </div>
             {% endif %}

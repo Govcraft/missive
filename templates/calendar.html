@@ -30,7 +30,7 @@
                 <div class="p-4 text-sm text-on-surface-faint">Loading calendar...</div>
             </div>
             <!-- Event list -->
-            <div id="event-directory" class="flex-1 overflow-y-auto px-4"
+            <div id="event-directory" class="flex-1 overflow-y-auto px-2"
                  hx-get="/api/v1/calendar/events"
                  hx-trigger="load, calendarUpdated from:body"
                  hx-swap="innerHTML">
