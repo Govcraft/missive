@@ -37,6 +37,25 @@
     }
 
     document.addEventListener('DOMContentLoaded', updateThemeLabel);
+
+    function toggleSidebar() {
+        var sidebar = document.getElementById('desktop-sidebar');
+        var content = document.querySelector('.sidebar-content-offset');
+        if (sidebar) {
+            sidebar.classList.toggle('sidebar-expanded');
+            if (content) content.classList.toggle('sidebar-expanded');
+            localStorage.setItem('sidebar-expanded', sidebar.classList.contains('sidebar-expanded'));
+        }
+    }
+
+    (function() {
+        if (localStorage.getItem('sidebar-expanded') === 'true') {
+            var sidebar = document.getElementById('desktop-sidebar');
+            var content = document.querySelector('.sidebar-content-offset');
+            if (sidebar) sidebar.classList.add('sidebar-expanded');
+            if (content) content.classList.add('sidebar-expanded');
+        }
+    })();
     </script>
     <title>{% block title %}Missive{% endblock %}</title>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
@@ -66,7 +85,7 @@ function resizeEmailIframe(iframe) {
     }
 }
 document.body.addEventListener('emailRead', function() {
-    var row = document.querySelector('.email-row.bg-surface-raised');
+    var row = document.querySelector('.email-row.bg-surface-selected');
     if (row) {
         row.classList.remove('bg-surface');
         row.classList.add('bg-surface-hover/50');
@@ -156,7 +175,7 @@ document.addEventListener('keydown', function(e) {
 
     // x — toggle checkbox on current/highlighted email row
     if (key === 'x') {
-        var current = document.querySelector('.email-row.bg-surface-raised');
+        var current = document.querySelector('.email-row.bg-surface-selected');
         if (current) {
             var checkbox = current.closest('li').querySelector('.bulk-checkbox');
             if (checkbox) {
@@ -169,7 +188,7 @@ document.addEventListener('keydown', function(e) {
 
     // j/k — navigate email list
     if (key === 'j' || key === 'k') {
-        var current = document.querySelector('.email-row.bg-surface-raised');
+        var current = document.querySelector('.email-row.bg-surface-selected');
         var target;
         if (current) {
             target = key === 'j' ? current.nextElementSibling : current.previousElementSibling;

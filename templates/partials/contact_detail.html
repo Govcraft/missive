@@ -13,7 +13,7 @@
                 {{ contact.initials() }}
             </div>
             <div class="min-w-0">
-                <h2 class="text-lg/7 font-semibold text-on-surface">{{ contact.full_name }}</h2>
+                <h2 class="text-lg/7 font-semibold text-primary">{{ contact.full_name }}</h2>
                 {% if !contact.organization.is_empty() %}
                 <p class="text-sm text-on-surface-muted">{{ contact.organization }}</p>
                 {% endif %}
@@ -67,12 +67,12 @@
                     <ul role="list" class="space-y-1">
                         {% for email in contact.emails %}
                         <li class="flex items-center gap-x-2">
-                            <a href="mailto:{{ email.address }}" class="text-accent hover:underline">{{ email.address }}</a>
+                            <a href="mailto:{{ email.address }}" class="text-primary hover:underline">{{ email.address }}</a>
                             {% if !email.label.is_empty() %}
                             <span class="text-xs text-on-surface-faint">{{ email.label }}</span>
                             {% endif %}
                             {% if email.is_preferred %}
-                            <span class="inline-flex items-center rounded-full bg-surface-raised px-1.5 py-0.5 text-[0.625rem] font-medium text-on-surface-muted">preferred</span>
+                            <span class="inline-flex items-center rounded-full bg-accent-surface px-1.5 py-0.5 text-[0.625rem] font-medium text-accent">preferred</span>
                             {% endif %}
                         </li>
                         {% endfor %}
@@ -94,7 +94,7 @@
                             <span class="text-xs text-on-surface-faint">{{ phone.label }}</span>
                             {% endif %}
                             {% if phone.is_preferred %}
-                            <span class="inline-flex items-center rounded-full bg-surface-raised px-1.5 py-0.5 text-[0.625rem] font-medium text-on-surface-muted">preferred</span>
+                            <span class="inline-flex items-center rounded-full bg-accent-surface px-1.5 py-0.5 text-[0.625rem] font-medium text-accent">preferred</span>
                             {% endif %}
                         </li>
                         {% endfor %}

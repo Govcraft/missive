@@ -21,10 +21,11 @@
 
     /* ── Semantic surface tokens (light defaults) ── */
     --color-surface: oklch(1 0 0);
-    --color-surface-nav: var(--color-neutral-800);
+    --color-surface-nav: var(--color-neutral-100);
     --color-surface-dim: var(--color-neutral-50);
     --color-surface-raised: var(--color-neutral-100);
-    --color-surface-hover: var(--color-neutral-50);
+    --color-surface-selected: oklch(1 0 0);
+    --color-surface-hover: oklch(1 0 0);
     --color-surface-invert: var(--color-neutral-950);
 
     /* ── Semantic text tokens ── */
@@ -33,21 +34,22 @@
     --color-on-surface-muted: var(--color-neutral-500);
     --color-on-surface-faint: var(--color-neutral-400);
     --color-on-surface-invert: oklch(1 0 0);
+    --color-on-primary: var(--color-neutral-900);
 
     /* ── Semantic border/ring tokens ── */
-    --color-border: var(--color-neutral-200);
-    --color-border-strong: var(--color-neutral-300);
+    --color-border: var(--color-neutral-100);
+    --color-border-strong: var(--color-neutral-200);
     --color-ring: var(--color-neutral-500);
 
-    /* ── Primary — mapped to neutral for grayscale pass ── */
-    --color-primary: var(--color-neutral-700);
-    --color-primary-hover: var(--color-neutral-600);
-    --color-primary-surface: var(--color-neutral-50);
+    /* ── Primary — warm cream ── */
+    --color-primary: oklch(0.7157 0.1822 113.88);
+    --color-primary-hover: oklch(0.67 0.18 113.88);
+    --color-primary-surface: oklch(0.95 0.03 109.88);
 
     /* ── Accent — warm amber ── */
-    --color-accent: oklch(0.55 0.15 75);
-    --color-accent-hover: oklch(0.48 0.15 75);
-    --color-accent-surface: oklch(0.95 0.04 75);
+    --color-accent: oklch(0.68 0.19 75);
+    --color-accent-hover: oklch(0.62 0.19 75);
+    --color-accent-surface: oklch(0.95 0.05 75);
 
     /* ── Status colors — grayscale stand-ins ── */
     --color-success: oklch(0.55 0 0);
@@ -60,6 +62,7 @@
     --color-surface-nav: oklch(0.13 0 0);
     --color-surface-dim: oklch(0.13 0 0);
     --color-surface-raised: oklch(0.21 0 0);
+    --color-surface-selected: oklch(0.24 0 0);
     --color-surface-hover: oklch(0.24 0 0);
     --color-surface-invert: var(--color-neutral-100);
 
@@ -68,14 +71,15 @@
     --color-on-surface-muted: oklch(0.58 0 0);
     --color-on-surface-faint: oklch(0.45 0 0);
     --color-on-surface-invert: var(--color-neutral-950);
+    --color-on-primary: var(--color-neutral-950);
 
-    --color-border: oklch(0.30 0 0);
-    --color-border-strong: oklch(0.38 0 0);
+    --color-border: oklch(0.25 0 0);
+    --color-border-strong: oklch(0.32 0 0);
     --color-ring: oklch(0.50 0 0);
 
-    --color-primary: var(--color-neutral-400);
-    --color-primary-hover: var(--color-neutral-300);
-    --color-primary-surface: var(--color-neutral-900);
+    --color-primary: oklch(0.9157 0.2322 113.88);
+    --color-primary-hover: oklch(0.87 0.23 113.88);
+    --color-primary-surface: oklch(0.22 0.04 113.88);
 
     --color-accent: oklch(0.78 0.14 75);
     --color-accent-hover: oklch(0.83 0.12 75);
@@ -202,13 +206,81 @@ trix-toolbar .trix-button-group--file-tools {
     .missive-grid > #email-detail-pane:empty { display: none; }
 }
 
+/* ── Collapsible sidebar ── */
+@media (min-width: 1024px) {
+    .desktop-sidebar {
+        width: 5rem;
+        transition: width 0.2s ease;
+    }
+
+    .desktop-sidebar .sidebar-label {
+        display: none;
+    }
+
+    .desktop-sidebar .sidebar-inner {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .desktop-sidebar .sidebar-nav-link {
+        justify-content: center;
+    }
+
+    .desktop-sidebar .sidebar-user {
+        justify-content: center;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .desktop-sidebar .sidebar-user-details {
+        display: none;
+    }
+
+    .desktop-sidebar.sidebar-expanded {
+        width: 18rem;
+    }
+
+    .desktop-sidebar.sidebar-expanded .sidebar-label {
+        display: inline;
+    }
+
+    .desktop-sidebar.sidebar-expanded .sidebar-inner {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    .desktop-sidebar.sidebar-expanded .sidebar-nav-link {
+        justify-content: flex-start;
+    }
+
+    .desktop-sidebar.sidebar-expanded .sidebar-user {
+        justify-content: flex-start;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    .desktop-sidebar.sidebar-expanded .sidebar-user-details {
+        display: inline;
+    }
+
+    .sidebar-content-offset {
+        padding-left: 5rem;
+        transition: padding-left 0.2s ease;
+    }
+
+    .sidebar-content-offset.sidebar-expanded {
+        padding-left: 18rem;
+    }
+}
+
 /* ── Email row selection refinements ── */
 .email-row {
     transition: background-color 0.15s ease;
 }
 
-.email-row.bg-surface-raised {
-    box-shadow: inset 4px 0 0 var(--color-neutral-600);
+.email-row.bg-surface-selected {
+    box-shadow: inset 4px 0 0 var(--color-accent);
+    color: var(--color-primary);
 }
 
 /* ── Mailbox sidebar active indicator ── */
@@ -216,8 +288,17 @@ trix-toolbar .trix-button-group--file-tools {
     transition: background-color 0.1s ease, color 0.1s ease;
 }
 
-.mailbox-item.bg-surface-raised {
-    box-shadow: inset 4px 0 0 var(--color-neutral-600);
+.mailbox-item.bg-surface-selected {
+    box-shadow: inset 4px 0 0 var(--color-accent);
+    color: var(--color-primary);
+}
+
+.contact-row.active {
+    color: var(--color-primary);
+}
+
+.event-row.active {
+    color: var(--color-primary);
 }
 
 /* ── Empty state breathing room ── */
@@ -266,7 +347,12 @@ trix-toolbar .trix-button-group--file-tools {
 }
 
 .contact-row.active {
-    box-shadow: inset 4px 0 0 var(--color-neutral-600);
+    box-shadow: inset 4px 0 0 var(--color-accent);
+}
+
+.contact-row.active .rounded-full {
+    background-color: var(--color-accent);
+    color: var(--color-on-surface-invert);
 }
 
 /* ── Calendar grid layout ── */
@@ -305,7 +391,7 @@ trix-toolbar .trix-button-group--file-tools {
 }
 
 .event-row.active {
-    box-shadow: inset 4px 0 0 var(--color-neutral-600);
+    box-shadow: inset 4px 0 0 var(--color-accent);
 }
 
 /* ── Smooth iframe loading ── */

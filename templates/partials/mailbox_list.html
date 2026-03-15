@@ -1,17 +1,17 @@
-<ul role="list">
+<ul role="list" class="px-2">
     {% for mailbox in mailboxes %}
     <li>
         <a href="#"
            hx-get="/api/v1/emails?mailbox_id={{ mailbox.id }}"
            hx-target="#email-list-pane"
            hx-swap="innerHTML"
-           class="mailbox-item flex items-center justify-between px-4 py-1.5 text-sm hover:bg-surface-raised cursor-pointer transition-colors sm:px-6{% if mailbox.role == "inbox" %} bg-surface-raised text-on-surface-secondary{% endif %}"
-           {% if mailbox.role == "inbox" %}hx-trigger="load, click" {% endif %}onclick="document.querySelectorAll('.mailbox-item').forEach(el => el.classList.remove('bg-surface-raised', 'text-on-surface-secondary')); this.classList.add('bg-surface-raised', 'text-on-surface-secondary'); document.getElementById('active-mailbox-id').value = '{{ mailbox.id }}'; document.getElementById('search-input').value = ''; var grid = document.querySelector('.missive-grid'); if (grid) grid.dataset.activePane = 'emails';">
+           class="mailbox-item flex items-center justify-between rounded-md px-4 py-1.5 text-sm hover:bg-surface-hover cursor-pointer transition-colors sm:px-6{% if mailbox.role == "inbox" %} bg-surface-selected text-on-surface-secondary{% endif %}"
+           {% if mailbox.role == "inbox" %}hx-trigger="load, click" {% endif %}onclick="document.querySelectorAll('.mailbox-item').forEach(el => el.classList.remove('bg-surface-selected', 'text-on-surface-secondary')); this.classList.add('bg-surface-selected', 'text-on-surface-secondary'); document.getElementById('active-mailbox-id').value = '{{ mailbox.id }}'; document.getElementById('search-input').value = ''; var grid = document.querySelector('.missive-grid'); if (grid) grid.dataset.activePane = 'emails';">
             <span class="truncate{% if mailbox.role == "inbox" %} font-semibold{% endif %}">
                 {{ mailbox.name }}
             </span>
             {% if mailbox.unread_count > 0 %}
-            <span class="ml-2 inline-flex items-center justify-center min-w-6 rounded-full bg-accent-surface px-1.5 py-0.5 text-xs font-medium text-accent inset-ring inset-ring-accent/20 text-center">
+            <span class="ml-2 inline-flex items-center justify-center min-w-6 rounded-full bg-surface-raised px-1.5 py-0.5 text-xs font-medium text-on-surface-secondary inset-ring inset-ring-border text-center">
                 {{ mailbox.unread_count }}
             </span>
             {% endif %}

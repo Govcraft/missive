@@ -11,27 +11,8 @@
 
     <div class="flex flex-1 justify-between">
         <div class="flex shrink-0 items-center">
-            <img src="/static/images/missive_horizontal_logotext_light_bg.png" alt="Missive" class="h-8 w-auto">
         </div>
-        {% if active_app != "contacts" && active_app != "calendar" %}
-        <div class="flex flex-1 items-center justify-center px-2 lg:ml-6 lg:justify-end">
-            <div class="grid w-full max-w-lg grid-cols-1 lg:max-w-xs">
-                <input type="search" name="search" id="search-input" placeholder="Search mail..."
-                       hx-get="/api/v1/emails"
-                       hx-trigger="input changed delay:300ms, search"
-                       hx-target="#email-list-pane"
-                       hx-swap="innerHTML"
-                       hx-include="#active-mailbox-id"
-                       class="col-start-1 row-start-1 block w-full rounded-md bg-surface py-1.5 pr-3 pl-10 text-base text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6" />
-                <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
-                     class="pointer-events-none col-start-1 row-start-1 ml-3 size-5 self-center text-on-surface-faint">
-                    <path d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd" fill-rule="evenodd" />
-                </svg>
-            </div>
-        </div>
-        {% else %}
         <div class="flex-1"></div>
-        {% endif %}
         <div class="flex shrink-0 items-center gap-x-4 lg:gap-x-6">
             <!-- Profile dropdown -->
             <el-dropdown class="relative">

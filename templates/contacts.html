@@ -5,8 +5,7 @@
 {% block content %}
 {% include "partials/app_nav.html" %}
 
-<div class="flex flex-col h-screen lg:pl-20">
-    {% include "partials/app_header.html" %}
+<div class="flex flex-col h-screen sidebar-content-offset">
 
     <main class="contacts-grid" data-active-pane="list">
         <!-- Contact list pane -->
@@ -16,7 +15,7 @@
                     hx-get="/api/v1/contacts/new"
                     hx-target="#contact-detail-pane"
                     hx-swap="innerHTML"
-                    class="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-on-surface-invert shadow-xs hover:bg-primary-hover transition-colors">
+                    class="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-on-primary shadow-xs hover:bg-primary-hover transition-colors">
                     <svg class="size-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                     </svg>

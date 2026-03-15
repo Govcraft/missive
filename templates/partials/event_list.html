@@ -12,10 +12,10 @@
                hx-target="#event-detail-pane"
                hx-swap="innerHTML"
                class="event-row flex items-start gap-x-3 rounded-md px-2 py-2.5 hover:bg-surface-hover transition-colors cursor-pointer"
-               onclick="document.querySelectorAll('.event-row').forEach(el => el.classList.remove('active', 'bg-surface-raised')); this.classList.add('active', 'bg-surface-raised'); var grid = document.querySelector('.calendar-grid'); if (grid && window.innerWidth < 768) grid.dataset.activePane = 'detail';">
+               onclick="document.querySelectorAll('.event-row').forEach(el => el.classList.remove('active', 'bg-surface-selected')); this.classList.add('active', 'bg-surface-selected'); var grid = document.querySelector('.calendar-grid'); if (grid && window.innerWidth < 768) grid.dataset.activePane = 'detail';">
                 <div class="shrink-0 w-16 pt-0.5">
                     {% if event.is_all_day %}
-                    <span class="inline-flex items-center rounded-full bg-surface-raised px-2 py-0.5 text-xs font-medium text-on-surface-muted">All day</span>
+                    <span class="inline-flex items-center rounded-full bg-accent-surface px-2 py-0.5 text-xs font-medium text-accent">All day</span>
                     {% else %}
                     <span class="text-sm font-medium text-on-surface-secondary">{{ event.time_display }}</span>
                     {% endif %}

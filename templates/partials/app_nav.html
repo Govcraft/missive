@@ -1,7 +1,7 @@
 <!-- Mobile sidebar drawer -->
 <el-dialog>
     <dialog id="sidebar" class="backdrop:bg-transparent lg:hidden">
-        <el-dialog-backdrop class="fixed inset-0 bg-neutral-950/80 transition-opacity duration-300 ease-linear data-closed:opacity-0"></el-dialog-backdrop>
+        <el-dialog-backdrop class="fixed inset-0 bg-on-surface/80 transition-opacity duration-300 ease-linear data-closed:opacity-0"></el-dialog-backdrop>
 
         <div tabindex="0" class="fixed inset-0 flex focus:outline-none">
             <el-dialog-panel class="group/dialog-panel relative mr-16 flex w-full max-w-xs flex-1 transform transition duration-300 ease-in-out data-closed:-translate-x-full">
@@ -14,33 +14,61 @@
                     </button>
                 </div>
 
-                <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-surface-nav px-6 pb-2">
-                    <div class="h-16 shrink-0"></div>
+                <!-- Mobile sidebar content -->
+                <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-surface px-6 pb-4">
+                    <div class="flex h-16 shrink-0 items-center">
+                        <span class="text-lg font-bold text-primary">Missive</span>
+                    </div>
                     <nav class="flex flex-1 flex-col">
-                        <ul role="list" class="-mx-2 flex-1 space-y-1">
+                        <ul role="list" class="flex flex-1 flex-col gap-y-7">
                             <li>
-                                <a href="/inbox" class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold {% if active_app == "mail" %}bg-neutral-700 text-on-surface-invert{% else %}text-on-surface-faint hover:bg-neutral-700 hover:text-on-surface-invert{% endif %}">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-6 shrink-0">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-                                    </svg>
-                                    Mail
-                                </a>
+                                <ul role="list" class="-mx-2 space-y-1">
+                                    <li>
+                                        <a href="/inbox" class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold {% if active_app == "mail" %}bg-surface-selected text-primary{% else %}text-on-surface-secondary hover:bg-surface-hover hover:text-primary transition-colors{% endif %}">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-6 shrink-0 {% if active_app == "mail" %}text-primary{% else %}text-on-surface-muted group-hover:text-primary{% endif %}">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                                            </svg>
+                                            Mail
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="/calendar" class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold {% if active_app == "calendar" %}bg-surface-selected text-primary{% else %}text-on-surface-secondary hover:bg-surface-hover hover:text-primary transition-colors{% endif %}">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-6 shrink-0 {% if active_app == "calendar" %}text-primary{% else %}text-on-surface-muted group-hover:text-primary{% endif %}">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                                            </svg>
+                                            Calendar
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="/contacts" class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold {% if active_app == "contacts" %}bg-surface-selected text-primary{% else %}text-on-surface-secondary hover:bg-surface-hover hover:text-primary transition-colors{% endif %}">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-6 shrink-0 {% if active_app == "contacts" %}text-primary{% else %}text-on-surface-muted group-hover:text-primary{% endif %}">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                                            </svg>
+                                            Contacts
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
-                            <li>
-                                <a href="/calendar" class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold {% if active_app == "calendar" %}bg-neutral-700 text-on-surface-invert{% else %}text-on-surface-faint hover:bg-neutral-700 hover:text-on-surface-invert{% endif %}">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-6 shrink-0">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                            <li class="-mx-6 mt-auto">
+                                <div class="flex items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-on-surface">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-8 rounded-full bg-surface-raised p-1 text-on-surface-faint">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
                                     </svg>
-                                    Calendar
-                                </a>
-                            </li>
-                            <li>
-                                <a href="/contacts" class="group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold {% if active_app == "contacts" %}bg-neutral-700 text-on-surface-invert{% else %}text-on-surface-faint hover:bg-neutral-700 hover:text-on-surface-invert{% endif %}">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-6 shrink-0">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
-                                    </svg>
-                                    Contacts
-                                </a>
+                                    <span>{{ username }}</span>
+                                </div>
+                                <div class="border-t border-border px-6 py-2 space-y-1">
+                                    <button type="button" command="show-modal" commandfor="shortcuts-dialog"
+                                            class="block w-full rounded-md px-2 py-1 text-left text-sm/6 text-on-surface-secondary hover:bg-surface-hover transition-colors">
+                                        Keyboard shortcuts
+                                    </button>
+                                    <button type="button" onclick="toggleTheme()"
+                                            class="block w-full rounded-md px-2 py-1 text-left text-sm/6 text-on-surface-secondary hover:bg-surface-hover transition-colors">
+                                        <span id="mobile-theme-label">Theme: System</span>
+                                    </button>
+                                    <form action="/logout" method="POST">
+                                        <button type="submit" class="block w-full rounded-md px-2 py-1 text-left text-sm/6 text-on-surface-secondary hover:bg-surface-hover transition-colors">Sign out</button>
+                                    </form>
+                                </div>
                             </li>
                         </ul>
                     </nav>
@@ -51,34 +79,87 @@
 </el-dialog>
 
 <!-- Static sidebar for desktop -->
-<div class="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:block lg:w-20 lg:overflow-y-auto lg:bg-surface-nav lg:pb-4">
-    <div class="h-16 shrink-0"></div>
-    <nav class="mt-8">
-        <ul role="list" class="flex flex-col items-center space-y-1">
-            <li>
-                <a href="/inbox" class="group flex gap-x-3 rounded-md p-3 text-sm/6 font-semibold {% if active_app == "mail" %}bg-neutral-700 text-on-surface-invert{% else %}text-on-surface-faint hover:bg-neutral-700 hover:text-on-surface-invert transition-colors{% endif %}" title="Mail">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-6 shrink-0">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-                    </svg>
-                    <span class="sr-only">Mail</span>
-                </a>
-            </li>
-            <li>
-                <a href="/calendar" class="group flex gap-x-3 rounded-md p-3 text-sm/6 font-semibold {% if active_app == "calendar" %}bg-neutral-700 text-on-surface-invert{% else %}text-on-surface-faint hover:bg-neutral-700 hover:text-on-surface-invert transition-colors{% endif %}" title="Calendar">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-6 shrink-0">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
-                    </svg>
-                    <span class="sr-only">Calendar</span>
-                </a>
-            </li>
-            <li>
-                <a href="/contacts" class="group flex gap-x-3 rounded-md p-3 text-sm/6 font-semibold {% if active_app == "contacts" %}bg-neutral-700 text-on-surface-invert{% else %}text-on-surface-faint hover:bg-neutral-700 hover:text-on-surface-invert transition-colors{% endif %}" title="Contacts">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-6 shrink-0">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
-                    </svg>
-                    <span class="sr-only">Contacts</span>
-                </a>
-            </li>
-        </ul>
-    </nav>
+<div id="desktop-sidebar" class="desktop-sidebar hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col">
+    <div class="sidebar-inner flex grow flex-col gap-y-5 overflow-y-auto border-r border-border bg-surface px-6">
+        <div class="flex h-16 shrink-0 items-center justify-between">
+            <span class="sidebar-label text-lg font-bold text-primary">Missive</span>
+            <button type="button" onclick="toggleSidebar()" class="rounded-md p-1 text-on-surface-muted hover:text-on-surface hover:bg-surface-hover transition-colors" title="Toggle sidebar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
+                </svg>
+            </button>
+        </div>
+        <nav class="flex flex-1 flex-col">
+            <ul role="list" class="flex flex-1 flex-col gap-y-7">
+                <li>
+                    <ul role="list" class="-mx-2 space-y-1">
+                        <li>
+                            <a href="/inbox" title="Mail" class="sidebar-nav-link group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold {% if active_app == "mail" %}bg-surface-selected text-primary{% else %}text-on-surface-secondary hover:bg-surface-hover hover:text-primary transition-colors{% endif %}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-6 shrink-0 {% if active_app == "mail" %}text-primary{% else %}text-on-surface-muted group-hover:text-primary{% endif %}">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                                </svg>
+                                <span class="sidebar-label">Mail</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/calendar" title="Calendar" class="sidebar-nav-link group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold {% if active_app == "calendar" %}bg-surface-selected text-primary{% else %}text-on-surface-secondary hover:bg-surface-hover hover:text-primary transition-colors{% endif %}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-6 shrink-0 {% if active_app == "calendar" %}text-primary{% else %}text-on-surface-muted group-hover:text-primary{% endif %}">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                                </svg>
+                                <span class="sidebar-label">Calendar</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="/contacts" title="Contacts" class="sidebar-nav-link group flex gap-x-3 rounded-md p-2 text-sm/6 font-semibold {% if active_app == "contacts" %}bg-surface-selected text-primary{% else %}text-on-surface-secondary hover:bg-surface-hover hover:text-primary transition-colors{% endif %}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-6 shrink-0 {% if active_app == "contacts" %}text-primary{% else %}text-on-surface-muted group-hover:text-primary{% endif %}">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                                </svg>
+                                <span class="sidebar-label">Contacts</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="-mx-6 mt-auto">
+                    <el-dropdown class="relative block">
+                        <button class="sidebar-user flex w-full items-center gap-x-4 px-6 py-3 text-sm/6 font-semibold text-on-surface hover:bg-surface-hover transition-colors">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-8 shrink-0 rounded-full bg-surface-raised p-1 text-on-surface-faint">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                            </svg>
+                            <span class="sidebar-user-details flex-1 text-left">{{ username }}</span>
+                            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="sidebar-user-details size-5 text-on-surface-faint">
+                                <path d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" fill-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <el-menu anchor="top start" popover class="w-56 origin-bottom-left rounded-md bg-surface py-2 shadow-lg outline outline-on-surface/5 transition transition-discrete [--anchor-gap:--spacing(2.5)] data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in">
+                            <button type="button" command="show-modal" commandfor="shortcuts-dialog"
+                                    class="block w-full px-3 py-1 text-left text-sm/6 text-on-surface hover:bg-surface-hover">
+                                Keyboard shortcuts
+                            </button>
+                            <button type="button" onclick="toggleTheme()"
+                                    class="block w-full px-3 py-1 text-left text-sm/6 text-on-surface hover:bg-surface-hover">
+                                <span id="theme-label">Theme: System</span>
+                            </button>
+                            <form action="/logout" method="POST">
+                                <button type="submit" class="block w-full px-3 py-1 text-left text-sm/6 text-on-surface hover:bg-surface-hover">Sign out</button>
+                            </form>
+                        </el-menu>
+                    </el-dropdown>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Mobile top bar -->
+<div class="sticky top-0 z-40 flex items-center gap-x-6 bg-surface px-4 py-4 shadow-xs sm:px-6 lg:hidden">
+    <button type="button" command="show-modal" commandfor="sidebar" class="-m-2.5 p-2.5 text-on-surface-secondary">
+        <span class="sr-only">Open sidebar</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-6">
+            <path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+    </button>
+    <div class="flex-1 text-sm/6 font-semibold text-on-surface">{% if active_app == "mail" %}Mail{% else %}{% if active_app == "calendar" %}Calendar{% else %}Contacts{% endif %}{% endif %}</div>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="size-8 rounded-full bg-surface-raised p-1 text-on-surface-faint">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+    </svg>
 </div>

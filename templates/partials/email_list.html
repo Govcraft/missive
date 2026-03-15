@@ -19,9 +19,9 @@
     <span class="ml-auto text-xs text-on-surface-faint">{{ total }} {% if *total == 1 %}email{% else %}emails{% endif %}</span>
     {% endif %}
 </div>
-<ul role="list" class="divide-y divide-border">
+<ul role="list" class="px-2">
 {% for email in emails %}
-    <li id="email-row-{{ email.id }}" class="email-row flex items-start min-w-0 overflow-hidden hover:bg-surface-hover transition-colors{% if email.is_unread %} bg-surface-hover/50{% else %} bg-surface{% endif %}">
+    <li id="email-row-{{ email.id }}" class="email-row flex items-start min-w-0 overflow-hidden rounded-md hover:bg-surface-hover transition-colors{% if email.is_unread %} bg-surface-hover/50{% else %} bg-surface{% endif %}">
         <div class="flex items-center shrink-0 pl-2 pt-3 sm:pl-4 sm:pt-4">
             <input type="checkbox" class="bulk-checkbox h-4 w-4 rounded border-border-strong text-primary focus:ring-ring cursor-pointer"
                    value="{{ email.id }}"
@@ -32,7 +32,7 @@
            hx-target="#email-detail-pane"
            hx-swap="innerHTML"
            class="flex-1 min-w-0 block px-4 py-4 cursor-pointer"
-           onclick="document.querySelectorAll('.email-row').forEach(el => el.classList.remove('bg-surface-raised')); this.closest('.email-row').classList.add('bg-surface-raised');">
+           onclick="document.querySelectorAll('.email-row').forEach(el => el.classList.remove('bg-surface-selected')); this.closest('.email-row').classList.add('bg-surface-selected');">
             <div class="flex items-baseline justify-between mb-1 min-w-0">
                 <span class="text-sm truncate min-w-0{% if email.is_unread %} font-semibold text-on-surface{% else %} font-medium text-on-surface-secondary{% endif %}">
                     {{ email.from }}
@@ -44,7 +44,7 @@
                     </svg>
                     {% endif %}
                     {% if email.has_attachment %}
-                    <svg class="w-3.5 h-3.5 text-on-surface-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                     </svg>
                     {% endif %}
@@ -57,7 +57,7 @@
             {% if !email.keywords.is_empty() %}
             <div class="flex flex-wrap gap-1 mt-0.5">
                 {% for kw in email.keywords %}
-                <span class="inline-flex items-center rounded-full bg-surface-raised px-2 py-0.5 text-[0.625rem] font-medium text-on-surface-muted">{{ kw }}</span>
+                <span class="inline-flex items-center rounded-full bg-accent-surface px-2 py-0.5 text-[0.625rem] font-medium text-accent">{{ kw }}</span>
                 {% endfor %}
             </div>
             {% endif %}

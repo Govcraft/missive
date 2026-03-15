@@ -5,25 +5,15 @@
 {% block content %}
 {% include "partials/app_nav.html" %}
 
-<div class="flex flex-col h-screen lg:pl-20">
-    {% include "partials/app_header.html" %}
+<div class="flex flex-col h-screen sidebar-content-offset">
 
     <input type="hidden" name="mailbox_id" id="active-mailbox-id" value="" />
 
     <main class="missive-grid" data-active-pane="mailboxes" hx-ext="sse" sse-connect="/api/v1/events">
         <!-- Mailbox sidebar -->
         <div id="mailbox-pane" class="border-r border-border bg-surface-dim overflow-hidden overflow-y-auto flex flex-col">
-            <div class="px-4 py-4 sm:px-6">
-                <button type="button"
-                    hx-get="/api/v1/compose"
-                    hx-target="#email-detail-pane"
-                    hx-swap="innerHTML"
-                    class="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-on-surface-invert shadow-xs hover:bg-primary-hover transition-colors">
-                    <svg class="size-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                    Compose
-                </button>
+            <div class="flex items-end px-4 sm:px-6 shrink-0" style="height: 68px;">
+                <h2 class="text-xs/6 font-semibold text-on-surface-muted uppercase tracking-wide pb-2">Mailboxes</h2>
             </div>
             <div class="flex-1 overflow-y-auto"
                  hx-get="/api/v1/mailboxes"
@@ -34,7 +24,33 @@
         </div>
 
         <!-- Email list pane -->
-        <div id="email-list-pane" class="border-r border-border overflow-hidden overflow-y-auto bg-surface min-w-0">
+        <div class="border-r border-border overflow-hidden bg-surface min-w-0 flex flex-col">
+            <div class="px-4 py-4 sm:px-6 shrink-0 space-y-3">
+                <button type="button"
+                    hx-get="/api/v1/compose"
+                    hx-target="#email-detail-pane"
+                    hx-swap="innerHTML"
+                    class="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-on-primary shadow-xs hover:bg-primary-hover transition-colors">
+                    <svg class="size-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Compose
+                </button>
+                <div class="grid grid-cols-1">
+                    <input type="search" name="search" id="search-input" placeholder="Search mail..."
+                           hx-get="/api/v1/emails"
+                           hx-trigger="input changed delay:300ms, search"
+                           hx-target="#email-list-pane"
+                           hx-swap="innerHTML"
+                           hx-include="#active-mailbox-id"
+                           class="col-start-1 row-start-1 block w-full rounded-md bg-surface py-1.5 pr-3 pl-10 text-base text-on-surface outline-1 -outline-offset-1 outline-border-strong placeholder:text-on-surface-faint focus:outline-2 focus:-outline-offset-2 focus:outline-ring sm:text-sm/6" />
+                    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+                         class="pointer-events-none col-start-1 row-start-1 ml-3 size-5 self-center text-on-surface-faint">
+                        <path d="M9 3.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11ZM2 9a7 7 0 1 1 12.452 4.391l3.328 3.329a.75.75 0 1 1-1.06 1.06l-3.329-3.328A7 7 0 0 1 2 9Z" clip-rule="evenodd" fill-rule="evenodd" />
+                    </svg>
+                </div>
+            </div>
+            <div id="email-list-pane" class="flex-1 overflow-y-auto min-w-0">
             <button type="button"
                     class="md:hidden flex items-center gap-1 px-4 py-2 text-sm text-on-surface-muted"
                     onclick="document.querySelector('.missive-grid').dataset.activePane = 'mailboxes'">
@@ -45,6 +61,7 @@
             </button>
             <div class="flex items-center justify-center h-full text-sm text-on-surface-faint">
                 Select a mailbox
+            </div>
             </div>
         </div>
 

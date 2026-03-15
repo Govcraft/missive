@@ -8,7 +8,7 @@
         Back to list
     </button>
     <div class="px-4 py-5 sm:px-6">
-        <h2 class="text-lg/7 font-semibold text-on-surface">{{ email.subject }}</h2>
+        <h2 class="text-lg/7 font-semibold text-primary">{{ email.subject }}</h2>
         {% if !email.keywords.is_empty() %}
         <div class="flex flex-wrap gap-1.5 mt-2">
             {% for kw in email.keywords %}
@@ -162,7 +162,7 @@
             {% for att in email.attachments %}
             <li class="flex items-center justify-between py-3 pl-3 pr-4 text-sm sm:py-4 sm:pl-4 sm:pr-5">
                 <div class="flex w-0 flex-1 items-center">
-                    <svg class="size-5 shrink-0 text-on-surface-faint" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg class="size-5 shrink-0 text-accent" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
                     </svg>
                     <div class="ml-3 flex min-w-0 flex-1 gap-2">
