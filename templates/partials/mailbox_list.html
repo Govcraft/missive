@@ -5,8 +5,8 @@
            hx-get="/api/v1/emails?mailbox_id={{ mailbox.id }}"
            hx-target="#email-list-pane"
            hx-swap="innerHTML"
-           class="mailbox-item flex items-center justify-between rounded-md px-4 py-1.5 text-sm hover:bg-surface-hover cursor-pointer transition-colors sm:px-6{% if mailbox.role == "inbox" %} bg-surface-selected text-on-surface-secondary font-semibold{% endif %}"
-           {% if mailbox.role == "inbox" %}hx-trigger="load, click" {% endif %}onclick="document.querySelectorAll('.mailbox-item').forEach(el => el.classList.remove('bg-surface-selected', 'text-on-surface-secondary', 'font-semibold')); this.classList.add('bg-surface-selected', 'text-on-surface-secondary', 'font-semibold'); document.getElementById('active-mailbox-id').value = '{{ mailbox.id }}'; document.getElementById('search-input').value = ''; var grid = document.querySelector('.missive-grid'); if (grid) grid.dataset.activePane = 'emails';">
+           class="mailbox-item flex items-center justify-between rounded-md px-4 py-1.5 text-sm hover:bg-surface-hover cursor-pointer transition-colors sm:px-6{% if (active_mailbox_id.is_empty() && mailbox.role == "inbox") || mailbox.id.as_str() == active_mailbox_id.as_str() %} bg-surface-selected text-on-surface-secondary font-semibold{% endif %}"
+           {% if active_mailbox_id.is_empty() && mailbox.role == "inbox" %}hx-trigger="load, click" {% endif %}onclick="document.querySelectorAll('.mailbox-item').forEach(el => el.classList.remove('bg-surface-selected', 'text-on-surface-secondary', 'font-semibold')); this.classList.add('bg-surface-selected', 'text-on-surface-secondary', 'font-semibold'); document.getElementById('active-mailbox-id').value = '{{ mailbox.id }}'; document.getElementById('search-input').value = ''; var grid = document.querySelector('.missive-grid'); if (grid) grid.dataset.activePane = 'emails';">
             <span class="truncate"{% if mailbox.depth > 0 %} style="padding-left: {{ mailbox.depth * 16 }}px"{% endif %}>
                 {{ mailbox.name }}
             </span>
@@ -19,8 +19,10 @@
     </li>
     {% endfor %}
 </ul>
+{% if active_mailbox_id.is_empty() %}
 {% for mailbox in mailboxes %}
 {% if mailbox.role == "inbox" %}
 <script>document.getElementById('active-mailbox-id').value = '{{ mailbox.id }}';</script>
 {% endif %}
 {% endfor %}
+{% endif %}

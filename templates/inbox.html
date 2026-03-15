@@ -17,6 +17,8 @@
             </div>
             <div class="flex-1 overflow-y-auto"
                  hx-get="/api/v1/mailboxes"
+                 hx-include="#active-mailbox-id"
+                 hx-disinherit="hx-include"
                  hx-trigger="load, mailboxesUpdated from:body, sse:mailboxesUpdated"
                  hx-swap="innerHTML">
                 <div class="p-4 text-sm text-on-surface-faint">Loading mailboxes...</div>
