@@ -226,6 +226,10 @@ trix-toolbar .trix-button-group--file-tools {
         padding-right: 1rem;
     }
 
+    .desktop-sidebar .sidebar-header {
+        justify-content: center;
+    }
+
     .desktop-sidebar .sidebar-nav-link {
         justify-content: center;
     }
@@ -251,6 +255,10 @@ trix-toolbar .trix-button-group--file-tools {
     .desktop-sidebar.sidebar-expanded .sidebar-inner {
         padding-left: 1.5rem;
         padding-right: 1.5rem;
+    }
+
+    .desktop-sidebar.sidebar-expanded .sidebar-header {
+        justify-content: space-between;
     }
 
     .desktop-sidebar.sidebar-expanded .sidebar-nav-link {
