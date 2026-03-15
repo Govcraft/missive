@@ -220,18 +220,9 @@ async fn post_webhook(
 }
 
 async fn get_initial_state(jmap: &Client) -> anyhow::Result<String> {
-    let mut request = jmap.build();
-    let empty: Vec<&str> = Vec::new();
-    request
-        .get_email()
-        .ids(empty)
-        .properties([email::Property::Id]);
-
-    let response = request.send_get_email().await.map_err(|e| {
-        anyhow::anyhow!("failed to get initial JMAP state: {e}")
-    })?;
-
-    Ok(response.state().to_string())
+    jmap::get_email_state(jmap)
+        .await
+        .map_err(|e| anyhow::anyhow!("failed to get initial JMAP state: {e}"))
 }
 
 async fn fetch_and_post_emails(

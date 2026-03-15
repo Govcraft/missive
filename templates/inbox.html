@@ -74,6 +74,9 @@
              style="display:none">
         </div>
 
+        <!-- Browser notification trigger for new emails -->
+        <div id="email-notification-listener" sse-swap="emailReceived" hx-swap="none" style="display:none"></div>
+
         <!-- Email detail pane -->
         <div id="email-detail-pane" class="bg-neutral-50 dark:bg-neutral-800 overflow-y-auto">
             {% include "partials/empty_state.html" %}
@@ -90,6 +93,19 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
         if (grid && event.detail.target.children.length > 0) {
             grid.dataset.activePane = 'detail';
         }
+    }
+});
+
+// Browser notifications for new emails
+document.body.addEventListener('htmx:sseMessage', function(event) {
+    if (event.detail.type === 'emailReceived' &&
+        document.hidden &&
+        'Notification' in window &&
+        Notification.permission === 'granted') {
+        new Notification('Missive', {
+            body: 'You have new mail',
+            icon: '/static/favicon.ico'
+        });
     }
 });
 </script>

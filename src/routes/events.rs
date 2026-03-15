@@ -2,6 +2,7 @@ use std::convert::Infallible;
 use std::sync::Arc;
 
 use crate::error::{JmapErrorKind, MissiveError};
+use crate::jmap;
 use crate::session::AuthenticatedClient;
 use acton_service::prelude::*;
 use futures_util::StreamExt;
@@ -79,24 +80,52 @@ pub async fn event_stream(
         Err(e) => error!("SSE: failed to send connected event for {username}: {e}"),
     }
 
+    // Get initial email state for detecting new emails vs updates
+    let initial_email_state = jmap::get_email_state(&client)
+        .await
+        .unwrap_or_default();
+    info!("SSE: initial email state for {username}: {initial_email_state}");
+
     // Spawn a task that bridges JMAP EventSource → SseBroadcaster channel
     let bc = broadcaster.clone();
     let user = username.clone();
+    let jmap_client = client.clone();
     tokio::spawn(async move {
         let mut jmap_stream = std::pin::pin!(jmap_stream);
         let mut shutdown_rx = shutdown_rx;
+        let mut since_state = initial_email_state;
         loop {
             tokio::select! {
                 event = jmap_stream.next() => {
                     match event {
                         Some(Ok(ref notification)) => {
                             debug!("SSE: raw JMAP event for {user}: {notification:?}");
-                            for event_name in classify_push_notification(notification) {
+                            let events = classify_push_notification(notification);
+                            let has_email_change = events.contains(&"emailsUpdated");
+                            for event_name in &events {
                                 info!("SSE: emitting {event_name} for {user}");
-                                let msg = BroadcastMessage::named(event_name, "refresh");
+                                let msg = BroadcastMessage::named(*event_name, "refresh");
                                 match bc.broadcast_to_channel(&user, msg).await {
                                     Ok(n) => info!("SSE: broadcast delivered to {n} receiver(s) for {user}"),
                                     Err(e) => error!("SSE: broadcast send error for {user}: {e}"),
+                                }
+                            }
+                            // Check if the email change includes newly created emails
+                            if has_email_change {
+                                match jmap_client.email_changes(&since_state, None).await {
+                                    Ok(mut changes) => {
+                                        let created = changes.take_created();
+                                        since_state = changes.take_new_state();
+                                        if !created.is_empty() {
+                                            info!("SSE: {} new email(s) for {user}", created.len());
+                                            let msg = BroadcastMessage::named("emailReceived", "new");
+                                            match bc.broadcast_to_channel(&user, msg).await {
+                                                Ok(n) => info!("SSE: emailReceived delivered to {n} receiver(s) for {user}"),
+                                                Err(e) => error!("SSE: emailReceived send error for {user}: {e}"),
+                                            }
+                                        }
+                                    }
+                                    Err(e) => error!("SSE: email_changes failed for {user}: {e}"),
                                 }
                             }
                         }

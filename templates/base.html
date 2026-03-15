@@ -56,6 +56,25 @@
             if (content) content.classList.add('sidebar-expanded');
         }
     })();
+
+    function toggleNotifications() {
+        if (!('Notification' in window)) return;
+        if (Notification.permission === 'default') {
+            Notification.requestPermission().then(updateNotificationLabel);
+        }
+    }
+
+    function updateNotificationLabel() {
+        var labels = document.querySelectorAll('.notification-label');
+        if (!labels.length || !('Notification' in window)) return;
+        var text = 'Notifications: ';
+        if (Notification.permission === 'granted') text += 'On';
+        else if (Notification.permission === 'denied') text += 'Blocked';
+        else text += 'Off';
+        labels.forEach(function(el) { el.textContent = text; });
+    }
+
+    document.addEventListener('DOMContentLoaded', updateNotificationLabel);
     </script>
     <title>{% block title %}Missive{% endblock %}</title>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>

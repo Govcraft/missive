@@ -68,6 +68,10 @@
                                             class="block w-full rounded-md px-2 py-1 text-left text-sm/6 text-sky-300 hover:bg-sky-50/10 transition-colors">
                                         <span id="mobile-theme-label">Theme: System</span>
                                     </button>
+                                    <button type="button" onclick="toggleNotifications()"
+                                            class="block w-full rounded-md px-2 py-1 text-left text-sm/6 text-sky-300 hover:bg-sky-50/10 transition-colors">
+                                        <span class="notification-label">Notifications: Off</span>
+                                    </button>
                                     <form action="/logout" method="POST">
                                         <button type="submit" class="block w-full rounded-md px-2 py-1 text-left text-sm/6 text-sky-300 hover:bg-sky-50/10 transition-colors">Sign out</button>
                                     </form>
@@ -153,6 +157,10 @@
                             <button type="button" onclick="toggleTheme()"
                                     class="block w-full px-3 py-1 text-left text-sm/6 text-on-surface hover:bg-surface-hover">
                                 <span id="theme-label">Theme: System</span>
+                            </button>
+                            <button type="button" onclick="toggleNotifications()"
+                                    class="block w-full px-3 py-1 text-left text-sm/6 text-on-surface hover:bg-surface-hover">
+                                <span class="notification-label">Notifications: Off</span>
                             </button>
                             <form action="/logout" method="POST">
                                 <button type="submit" class="block w-full px-3 py-1 text-left text-sm/6 text-on-surface hover:bg-surface-hover">Sign out</button>

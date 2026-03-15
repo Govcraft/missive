@@ -1233,6 +1233,26 @@ pub fn extract_custom_keywords(keywords: &[&str]) -> Vec<String> {
     custom
 }
 
+/// Fetch the current JMAP Email state string.
+///
+/// Used as a baseline for `email_changes()` calls that detect new/updated/deleted emails.
+pub async fn get_email_state(client: &Client) -> Result<String, MissiveError> {
+    let mut request = client.build();
+    let empty: Vec<&str> = Vec::new();
+    request
+        .get_email()
+        .ids(empty)
+        .properties([email::Property::Id]);
+    let response = request.send_get_email().await.map_err(|e| {
+        error!("JMAP Email/get state fetch error: {e}");
+        MissiveError::Jmap(JmapErrorKind::QueryFailed {
+            method: "Email/get".to_string(),
+            message: e.to_string(),
+        })
+    })?;
+    Ok(response.state().to_string())
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::unwrap_used)]
